@@ -1,0 +1,26 @@
+{
+  "version": "2012-10-17",
+  "statement": [
+    {
+      "effect": "allow",
+      "action": [
+        "athena:StartQueryExecution",
+        "athena:GetQueryExecution",
+        "athena:GetQueryResults"
+      ],
+      "resource": "*"
+    },
+    {
+      "effect": "allow",
+      "action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "resource": [
+        "arn:aws:s3:::nbaspire-athena-results",
+        "arn:aws:s3:::nbaspire-athena-results/*"
+      ]
+    }
+  ]
+}

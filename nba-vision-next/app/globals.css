@@ -1,0 +1,896 @@
+/* Reset et base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utility classes pour remplacer Tailwind */
+.min-h-screen {
+  min-height: 100vh;
+}
+.relative {
+  position: relative;
+}
+.absolute {
+  position: absolute;
+}
+.fixed {
+  position: fixed;
+}
+.sticky {
+  position: sticky;
+}
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+.overflow-hidden {
+  overflow: hidden;
+}
+.pointer-events-none {
+  pointer-events: none;
+}
+.z-10 {
+  z-index: 10;
+}
+.z-30 {
+  z-index: 30;
+}
+.z-50 {
+  z-index: 50;
+}
+
+/* Flexbox */
+.flex {
+  display: flex;
+}
+.items-center {
+  align-items: center;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.flex-col {
+  flex-direction: column;
+}
+.space-x-3 > * + * {
+  margin-left: 0.75rem;
+}
+.space-x-8 > * + * {
+  margin-left: 2rem;
+}
+.gap-4 {
+  gap: 1rem;
+}
+.gap-6 {
+  gap: 1.5rem;
+}
+.gap-8 {
+  gap: 2rem;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Spacing */
+.p-4 {
+  padding: 1rem;
+}
+.p-6 {
+  padding: 1.5rem;
+}
+.p-8 {
+  padding: 2rem;
+}
+.px-4 {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.px-8 {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+.py-8 {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+.py-12 {
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+.py-16 {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+.py-20 {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+.mb-8 {
+  margin-bottom: 2rem;
+}
+.mb-12 {
+  margin-bottom: 3rem;
+}
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Sizing */
+.w-10 {
+  width: 2.5rem;
+}
+.w-24 {
+  width: 6rem;
+}
+.w-32 {
+  width: 8rem;
+}
+.w-full {
+  width: 100%;
+}
+.h-1 {
+  height: 0.25rem;
+}
+.h-10 {
+  height: 2.5rem;
+}
+.h-16 {
+  height: 4rem;
+}
+.max-w-4xl {
+  max-width: 56rem;
+}
+.max-w-7xl {
+  max-width: 80rem;
+}
+
+/* Typography */
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+.text-4xl {
+  font-size: 2.25rem;
+  line-height: 2.5rem;
+}
+.text-5xl {
+  font-size: 3rem;
+  line-height: 1;
+}
+.text-6xl {
+  font-size: 3.75rem;
+  line-height: 1;
+}
+.text-8xl {
+  font-size: 6rem;
+  line-height: 1;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-medium {
+  font-weight: 500;
+}
+.text-center {
+  text-align: center;
+}
+
+/* Colors */
+.text-white {
+  color: white;
+}
+.text-orange-200 {
+  color: #fed7aa;
+}
+.text-orange-700 {
+  color: #c2410c;
+}
+.text-orange-800 {
+  color: #9a3412;
+}
+.text-orange-900 {
+  color: #7c2d12;
+}
+.bg-white {
+  background-color: white;
+}
+
+/* Borders */
+.rounded-full {
+  border-radius: 9999px;
+}
+.rounded-2xl {
+  border-radius: 1rem;
+}
+.border {
+  border-width: 1px;
+}
+.border-2 {
+  border-width: 2px;
+}
+.border-orange-200 {
+  border-color: #fed7aa;
+}
+.border-orange-300 {
+  border-color: #fdba74;
+}
+
+/* Effects */
+.shadow-lg {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+.drop-shadow-lg {
+  filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+}
+.backdrop-blur-md {
+  backdrop-filter: blur(12px);
+}
+
+/* Opacity */
+.opacity-5 {
+  opacity: 0.05;
+}
+.opacity-10 {
+  opacity: 0.1;
+}
+
+/* Transitions */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+.duration-300 {
+  transition-duration: 300ms;
+}
+.duration-500 {
+  transition-duration: 500ms;
+}
+
+/* Hover effects */
+.hover\:text-white:hover {
+  color: white;
+}
+.hover\:text-orange-200:hover {
+  color: #fed7aa;
+}
+.hover\:scale-105:hover {
+  transform: scale(1.05);
+}
+.hover\:shadow-2xl:hover {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Group hover */
+.group:hover .group-hover\:w-full {
+  width: 100%;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .md\:flex {
+    display: flex;
+  }
+  .md\:text-7xl {
+    font-size: 4.5rem;
+    line-height: 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .lg\:px-8 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .sm\:px-6 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  .sm\:flex-row {
+    flex-direction: row;
+  }
+}
+
+/* Custom basketball animations */
+@keyframes dribble {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+@keyframes shoot {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.1);
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+}
+
+.basketball-dribble {
+  animation: dribble 2s ease-in-out infinite;
+}
+
+.basketball-shoot {
+  animation: shoot 3s ease-in-out infinite;
+}
+
+/* Basketball texture pattern */
+.basketball-texture {
+  background: radial-gradient(circle at 30% 30%, #ff8c00, #ff6b00);
+  position: relative;
+}
+
+.basketball-texture::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent 48%, #d2691e 49%, #d2691e 51%, transparent 52%),
+    linear-gradient(0deg, transparent 48%, #d2691e 49%, #d2691e 51%, transparent 52%);
+  border-radius: inherit;
+}
+
+/* Court floor effect */
+.court-floor {
+  background: linear-gradient(90deg, #deb887 0%, #d2b48c 50%, #deb887 100%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(139, 69, 19, 0.1) 2px,
+      rgba(139, 69, 19, 0.1) 4px
+    );
+}
+
+/* ===== ANIMATIONS CSS PURES (sans Tailwind) ===== */
+
+/* Animation de rebond principal pour le basketball */
+.basketball-bounce-css {
+  animation: basketball-bounce-keyframes 1.5s ease-in-out infinite;
+}
+
+@keyframes basketball-bounce-keyframes {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-40px);
+  }
+}
+
+/* Animation de flottement pour les basketballs décoratifs */
+.float-css {
+  animation: float-keyframes 15s ease-in-out infinite;
+}
+
+@keyframes float-keyframes {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-35px) rotate(0deg);
+  }
+  75% {
+    transform: translateY(-20px) rotate(-5deg);
+  }
+}
+
+/* Animation de pulsation pour les éléments décoratifs */
+.pulse-css {
+  animation: pulse-keyframes 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-keyframes {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Animation de rebond lent */
+.bounce-slow-css {
+  animation: bounce-slow-keyframes 3s ease-in-out infinite;
+}
+
+@keyframes bounce-slow-keyframes {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+/* Animation de rotation lente */
+.spin-slow-css {
+  animation: spin-slow-keyframes 8s linear infinite;
+}
+
+@keyframes spin-slow-keyframes {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animation de progression pour les barres */
+.progress-css {
+  animation: progress-keyframes 1.5s ease-out forwards;
+  animation-delay: 0.5s;
+  width: 0%;
+}
+
+@keyframes progress-keyframes {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--target-width, 100%);
+  }
+}
+
+/* Animation de fade-in */
+.fade-in-css {
+  animation: fade-in-keyframes 1s ease-out forwards;
+}
+
+@keyframes fade-in-keyframes {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation de dribble réaliste */
+.dribble-css {
+  animation: dribble-keyframes 1s ease-in-out infinite;
+}
+
+@keyframes dribble-keyframes {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-25px);
+  }
+}
+
+/* Animation de rebond avec rotation */
+.bounce-rotate-css {
+  animation: bounce-rotate-keyframes 2s ease-in-out infinite;
+}
+
+@keyframes bounce-rotate-keyframes {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+/* Animation de scale hover */
+.scale-hover-css {
+  transition: transform 0.3s ease;
+}
+
+.scale-hover-css:hover {
+  transform: scale(1.05);
+}
+
+/* Animation de glow */
+.glow-css {
+  animation: glow-keyframes 3s ease-in-out infinite;
+}
+
+@keyframes glow-keyframes {
+  0% {
+    text-shadow: 0 0 5px rgba(255, 120, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 120, 0, 0.8);
+  }
+  100% {
+    text-shadow: 0 0 5px rgba(255, 120, 0, 0.5);
+  }
+}
+
+/* Animation pulse pour les éléments décoratifs */
+.animate-pulse {
+  animation: pulse-keyframes 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Animation pour les barres de progression */
+.animate-progress {
+  animation: progress-keyframes 1.5s ease-out forwards;
+  animation-delay: 0.5s;
+}
+
+/* Styles pour les cartes */
+.card-hover {
+  transition: all 0.5s ease;
+}
+
+.card-hover:hover {
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Styles pour les liens de navigation */
+.nav-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.nav-link::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: #fdba74;
+  transition: width 0.3s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+/* Styles pour les boutons */
+.btn-primary {
+  background: linear-gradient(to right, #ea580c, #c2410c);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  border: 2px solid #fb923c;
+  font-weight: 600;
+  font-size: 1.125rem;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #c2410c, #9a3412);
+  transform: scale(1.05);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #c2410c;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  border: 2px solid #ea580c;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline:hover {
+  background-color: #ffedd5;
+  transform: scale(1.05);
+}
+
+/* Styles pour les statistiques */
+.stat-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border-radius: 1rem;
+  padding: 2rem;
+  border: 2px solid #fed7aa;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Styles pour les barres de progression */
+.progress-bar {
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  width: 0%;
+  animation: progress-keyframes 1.5s ease-out forwards;
+  animation-delay: 0.5s;
+}
+
+.progress-fill.orange {
+  background-color: #f97316;
+}
+.progress-fill.blue {
+  background-color: #3b82f6;
+}
+.progress-fill.purple {
+  background-color: #8b5cf6;
+}
+
+/* Responsive utilities */
+@media (max-width: 767px) {
+  .hidden-mobile {
+    display: none;
+  }
+  .text-responsive {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .text-responsive {
+    font-size: 4.5rem;
+    line-height: 1;
+  }
+}
+
+/* Styles pour les composants UI */
+.ui-card {
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.ui-card-header {
+  padding: 1.5rem 1.5rem 0;
+}
+
+.ui-card-content {
+  padding: 1.5rem;
+}
+
+.ui-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+}
+
+.ui-card-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.25rem;
+}
+
+/* Styles pour les boutons UI */
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+.ui-button-sm {
+  height: 2.25rem;
+  padding: 0 0.75rem;
+}
+
+.ui-button-lg {
+  height: 2.75rem;
+  padding: 0 2rem;
+}
+
+.ui-button-ghost {
+  background: transparent;
+  color: inherit;
+}
+
+.ui-button-ghost:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Styles pour les inputs */
+.ui-input {
+  display: flex;
+  height: 2.5rem;
+  width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.ui-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Styles pour les selects */
+.ui-select-trigger {
+  display: flex;
+  height: 2.5rem;
+  width: 100%;
+  align-items: center;
+  justify-content: between;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.ui-select-trigger:hover {
+  border-color: #9ca3af;
+}
+
+/* Styles pour les badges */
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.ui-badge-default {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.ui-badge-outline {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+/* Styles pour les progress bars */
+.ui-progress {
+  position: relative;
+  height: 1rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: #f3f4f6;
+}
+
+.ui-progress-indicator {
+  height: 100%;
+  width: 100%;
+  flex: 1;
+  background: #3b82f6;
+  transition: all 0.2s;
+  border-radius: 9999px;
+}
+
+/* Styles pour les tabs */
+.ui-tabs-list {
+  display: inline-flex;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  background: #f9fafb;
+  padding: 0.25rem;
+  color: #6b7280;
+}
+
+.ui-tabs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border-radius: 0.125rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+}
+
+.ui-tabs-trigger[data-state="active"] {
+  background: white;
+  color: #111827;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.ui-tabs-content {
+  margin-top: 0.5rem;
+}
