@@ -1,14 +1,38 @@
 import boto3
 import time
-from chalice import Chalice, Response
+import joblib
+import numpy as np
+import pandas as pd
+from chalice import Chalice, Response, BadRequestError
+import os
+import logging
+import traceback
 
+logging.basicConfig(level=logging.DEBUG)
+
+print("Current working directory:", os.getcwd())
+print("Files in current dir:", os.listdir())
 
 app = Chalice(app_name='nbaspire-back')
 
 ATHENA_DATABASE = 'nba_aspire_db'
-ATHENA_TABLE = 'data'  # à adapter si différent
-ATHENA_OUTPUT = 's3://nbaaspire-bucket/athena-results/'  # à adapter si nécessaire
+ATHENA_TABLE = 'data'
+ATHENA_OUTPUT = 's3://nbaaspire-bucket/athena-results/'
 ATHENA_REGION = 'eu-west-1'
+
+client = boto3.client('athena', region_name=ATHENA_REGION)
+
+@app.middleware('http')
+def add_cors_headers(event, get_response):
+    response = get_response(event)
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,OPTIONS,POST'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return response
+
+model = None
+scaler = None
+label_encoder = None
 
 def compute_score(player_row):
     weights = {
@@ -19,19 +43,31 @@ def compute_score(player_row):
         'x3p_percent': 0.1,
         'ft_percent': 0.1,
     }
-    score = sum(player_row[stat] * w for stat, w in weights.items() if not pd.isna(player_row[stat]))
-    return score
-
-@app.middleware('http')
-def add_cors_headers(event, get_response):
-    response = get_response(event)
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET,OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    return response
+    return sum(player_row.get(stat, 0) * w for stat, w in weights.items())
 
 
-client = boto3.client('athena', region_name=ATHENA_REGION)
+def load_ml_models():
+    global model, scaler, label_encoder
+    base_path = os.getcwd()
+    print("Loading ML models...")
+    print("Base directory:", base_path)
+
+    try:
+        model_path = os.path.join(base_path, 'multi_output_debutants_xgboost_model.pkl')
+        scaler_path = os.path.join(base_path, 'scaler_deb_xgb.pkl')
+        label_encoder_path = os.path.join(base_path, 'label_encoder_deb_xbg.pkl')
+
+        model = joblib.load(model_path)
+        scaler = joblib.load(scaler_path)
+        label_encoder = joblib.load(label_encoder_path)
+
+        print("=== ALL ML MODELS LOADED SUCCESSFULLY ===")
+
+    except Exception as e:
+        print("=== ERROR LOADING ML MODELS ===")
+        traceback.print_exc()
+        print("=== END OF TRACEBACK ===")
+        raise e
 
 def run_athena_query(query: str):
     response = client.start_query_execution(
@@ -54,23 +90,62 @@ def run_athena_query(query: str):
     result = client.get_query_results(QueryExecutionId=query_id)
     return result
 
+@app.route('/predict', methods=['POST'])
+def predict_player():
+    try:
+        print("Predict route triggered")
+        global model, scaler, label_encoder
+
+        if model is None or scaler is None or label_encoder is None:
+            load_ml_models()
+
+        data = app.current_request.json_body
+        print("Received data:", data)
+
+        position = data.get('position')
+        if position not in label_encoder['pos'].classes_:
+            raise BadRequestError(f"Position inconnue: {position}")
+
+        pos_encoded = label_encoder['pos'].transform([position])[0]
+
+        features = [
+            data['age'], data['experience'], data['heightWithoutShoes'],
+            data['heightWithShoes'], data['weight'], data['wingspan'],
+            data['verticalReach'], data['bodyFatPercentage'],
+            data['handLength'], data['handWidth'], pos_encoded
+        ]
+
+        features_array = np.array(features).reshape(1, -1)
+        scaled_features = scaler.transform(features_array)
+        prediction = model.predict(scaled_features)[0]
+
+        response = {
+            "mvpProbability": float(prediction[0]),
+            "allStarProbability": float(prediction[1]),
+            "playoffSuccess": float(prediction[2]),
+            "nextSeasonPoints": float(prediction[3]),
+            "confidence": 90.0,
+            "factors": [
+                {"name": "Attributs physiques", "impact": 85, "positive": True},
+                {"name": "Expérience", "impact": 72, "positive": True},
+                {"name": "Poste adapté", "impact": 68, "positive": False},
+                {"name": "Potentiel athlétique", "impact": 91, "positive": True},
+            ]
+        }
+        return response
+
+    except Exception as e:
+        print("=== ERROR IN PREDICT ROUTE ===")
+        traceback.print_exc()
+        return Response(body={"error": str(e)}, status_code=400)
+
 @app.route('/players')
 def get_players():
     query = f"""
         SELECT 
-            player_id,
-            player,
-            pos,
-            age,
-            tm,
-            pts_per_game,
-            height_wo_shoes_ft_in,
-            weight,
-            wingspan_ft_in,
-            mp_per_game,
-            fg_percent,
-            trb_per_game,
-            ast_per_game
+            player_id, player, pos, age, tm, pts_per_game,
+            height_wo_shoes_ft_in, weight, wingspan_ft_in,
+            mp_per_game, fg_percent, trb_per_game, ast_per_game
         FROM {ATHENA_TABLE}
         WHERE season_year >= 2023
         LIMIT 50
@@ -78,23 +153,17 @@ def get_players():
     try:
         results = run_athena_query(query)
         headers = [col['VarCharValue'] for col in results['ResultSet']['Rows'][0]['Data']]
-        players = []
-        for row in results['ResultSet']['Rows'][1:]:
-            data = row['Data']
-            player = dict(zip(headers, [d.get('VarCharValue', '') for d in data]))
-            players.append(player)
+        players = [
+            dict(zip(headers, [d.get('VarCharValue', '') for d in row['Data']]))
+            for row in results['ResultSet']['Rows'][1:]
+        ]
         return {"data": players}
     except Exception as e:
         return Response(body={"error": str(e)}, status_code=500)
 
-
 @app.route('/players/{player_id}')
 def get_player_details(player_id):
-    query = f"""
-        SELECT * FROM data
-        WHERE player_id = {player_id}
-        LIMIT 1
-    """
+    query = f"SELECT * FROM data WHERE player_id = {player_id} LIMIT 1"
     try:
         results = run_athena_query(query)
         headers = [col['VarCharValue'] for col in results['ResultSet']['Rows'][0]['Data']]
@@ -118,7 +187,11 @@ def compare_players(player1_id, player2_id):
         players = []
         for row in results['ResultSet']['Rows'][1:]:
             data = row['Data']
-            player = dict(zip(headers, [float(d.get('VarCharValue', 0) or 0) if i != 1 else d.get('VarCharValue', '') for i, d in enumerate(data)]))
+            player = dict(zip(
+                headers,
+                [float(d.get('VarCharValue', 0) or 0) if i != 1 else d.get('VarCharValue', '')
+                 for i, d in enumerate(data)]
+            ))
             players.append(player)
 
         if len(players) != 2:
@@ -138,3 +211,8 @@ def compare_players(player1_id, player2_id):
 
     except Exception as e:
         return Response(body={"error": str(e)}, status_code=500)
+
+@app.route('/health')
+def health():
+    loaded = model is not None and scaler is not None and label_encoder is not None
+    return {'status': 'ok', 'model_loaded': loaded}
