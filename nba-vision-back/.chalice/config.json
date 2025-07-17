@@ -3,11 +3,11 @@
   "app_name": "nbaspire",
   "stages": {
     "dev": {
-      "api_gateway_stage": "api",
-      "iam_policy_file": "policy.json",
       "profile": "default",
       "region": "eu-west-1",
-      "manage_lambda_concurrency": false
+      "package_type": "Image",
+      "dockerfile": "./Dockerfile",
+      "automatic_layer": false
     }
   }
 }
