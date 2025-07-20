@@ -3,11 +3,36 @@
   "app_name": "nbaspire",
   "stages": {
     "dev": {
-      "profile": "default",
-      "region": "eu-west-1",
-      "package_type": "Image",
-      "dockerfile": "./Dockerfile",
-      "automatic_layer": false
+      "api_gateway_stage": "dev",
+      "manage_iam_role": true,
+      "autogen_policy": true,
+      "environment_variables": {
+        "MODEL_S3_BUCKET": "${aws:s3:::my‑nba‑models}"
+      },
+      "cors": {
+        "allow_origin": "*",
+        "allow_headers": ["Content-Type", "Authorization"],
+        "max_age": 600
+      },
+      "layers": [
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_numpy:1",
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_pandas:2",
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_sklearn:2"
+      ],
+      "package": {
+        "no_deps": true,
+        "ignore": [
+          "venv*/**",
+          "lambda-layer/**",
+          "numpy*/**",
+          "pandas*/**",
+          "scipy*/**",
+          "sklearn*/**",
+          "*.dist-info/**",
+          "*.pyc",
+          "__pycache__/**"
+        ]
+      }
     }
   }
 }

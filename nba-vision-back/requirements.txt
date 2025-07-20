@@ -1,2 +1,1 @@
-joblib==1.5.1
-scikit-learn==1.5.2
+boto3==1.*
