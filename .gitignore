@@ -1,0 +1,5 @@
+venv/
+nba-vision-back/venv/
+__pycache__/
+*.pkl
+nba-vision-back/out/
