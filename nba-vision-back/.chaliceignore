@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.xgb
+*.csv
+*.h5
+*.log
+*.json
+venv/
+*.zip
+out/
+numpy*/**
+pandas*/**
+scipy*/**
+sklearn*/**

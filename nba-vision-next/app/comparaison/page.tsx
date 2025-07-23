@@ -5,8 +5,7 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { BarChart3, GitCompare, Users, Loader2, AlertCircle, Trophy } from "lucide-react"
+import { BarChart3, Users, Loader2, AlertCircle } from "lucide-react"
 import { FloatingBasketballs } from "@/components/floating-basketballs"
 import { CourtLines } from "@/components/court-lines"
 import { SpotlightEffect } from "@/components/spotlight-effect"
@@ -53,45 +52,51 @@ export default function ComparaisonPage() {
   const [comparisonData, setComparisonData] = useState<ComparisonResult | null>(null)
 
   // URL API Chalice
-  const API_BASE_URL = "https://ljrpfvbp26.execute-api.eu-west-1.amazonaws.com/api/"
-  const uniquePlayers = Array.from(
-  new Map(players.map(p => [p.player_id, p])).values()
-)
-  // Charger la liste des joueurs
+  const API_BASE_URL = "https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev"
+  const uniquePlayers = Array.from(new Map(players.map((p) => [p.player_id, p])).values())
+
   // Charger la liste des joueurs
   const fetchPlayers = async () => {
-      try {
-        setLoadingPlayers(true)
-        setError(null)
-        const response = await fetch(`${API_BASE_URL}/players`)
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`)
-        }
-        const data = await response.json()
-
-        // Normalisation des IDs en string et suppression des doublons
-        const deduplicated: Player[] = Array.from(
-        new Map(
-          data.data.map((p: Player) => [p.player_id, { ...p, player_id: p.player_id.toString() }])
-        ).values()
-        )
-
-        setPlayers(deduplicated)
-      } catch (err) {
-        console.error("Erreur lors du chargement des joueurs:", err)
-        setError(err instanceof Error ? err.message : "Erreur lors du chargement des joueurs")
-      } finally {
-        setLoadingPlayers(false)
+    try {
+      setLoadingPlayers(true)
+      setError(null)
+      const response = await fetch(`${API_BASE_URL}/players`)
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`)
       }
+      const data = await response.json()
+      // Normalisation des IDs en string et suppression des doublons
+      const deduplicated: Player[] = Array.from(
+        new Map(
+          data.data.map((p: any) => [
+            p.player_id,
+            {
+              player_id: p.player_id.toString(),
+              name: p.player || "Nom inconnu",
+              team: p.tm || "Aucune équipe",
+            },
+          ]),
+        ).values(),
+      )
+      setPlayers(deduplicated)
+    } catch (err) {
+      console.error("Erreur lors du chargement des joueurs:", err)
+      setError(err instanceof Error ? err.message : "Erreur lors du chargement des joueurs")
+    } finally {
+      setLoadingPlayers(false)
+    }
   }
-
 
   // Comparer deux joueurs
   const fetchComparison = async (playerId1: string, playerId2: string) => {
     try {
       setLoadingComparison(true)
       setError(null)
-      const response = await fetch(`${API_BASE_URL}/compare/${playerId1}/${playerId2}`)
+      console.log("Comparaison :", playerId1, playerId2)
+      const id1 = Number.parseInt(playerId1).toString()
+      const id2 = Number.parseInt(playerId2).toString()
+      console.log("Envoi de la comparaison :", id1, id2)
+      const response = await fetch(`${API_BASE_URL}/compare/${id1}/${id2}`)
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`)
       }
@@ -111,7 +116,6 @@ export default function ComparaisonPage() {
     fetchPlayers()
   }, [])
 
-
   // Lancer comparaison quand 2 joueurs sont choisis
   useEffect(() => {
     if (player1Id && player2Id && player1Id !== player2Id) {
@@ -121,33 +125,24 @@ export default function ComparaisonPage() {
     }
   }, [player1Id, player2Id])
 
+  // Calculer le nombre de victoires par joueur
+  // const getPlayerWins = () => {
+  //   if (!comparisonData) return { player1Wins: 0, player2Wins: 0 }
 
-  const getComparisonColor = (value1: number, value2: number, isPlayer1: boolean) => {
-    if (Math.abs(value1 - value2) < 0.1) return "#9ca3af"
-    return (isPlayer1 ? value1 > value2 : value2 > value1) ? "#10b981" : "#ef4444"
-  }
+  //   const stats = [
+  //     comparisonData.player1.points > comparisonData.player2.points,
+  //     comparisonData.player1.rebounds > comparisonData.player2.rebounds,
+  //     comparisonData.player1.assists > comparisonData.player2.assists,
+  //     comparisonData.player1.field_goal_percentage > comparisonData.player2.field_goal_percentage,
+  //     comparisonData.player1.three_point_percentage > comparisonData.player2.three_point_percentage,
+  //     comparisonData.player1.efficiency > comparisonData.player2.efficiency,
+  //   ]
 
-  const getProgressValue = (value: number, max: number) => {
-    return Math.min((value / max) * 100, 100)
-  }
+  //   const player1Wins = stats.filter(Boolean).length
+  //   const player2Wins = 6 - player1Wins
 
-  const getWinContributionBadge = () => {
-    if (!comparisonData) return null
-    const diff = comparisonData.win_contribution_difference
-    const absDiff = Math.abs(diff)
-    if (absDiff < 0.1) {
-      return (
-        <Badge variant="outline" className="text-gray-600 border-gray-400">
-          🤝 Contribution équivalente
-        </Badge>
-      )
-    }
-    return diff > 0 ? (
-      <Badge className="bg-green-600 text-white">✅ {absDiff.toFixed(1)} victoires de plus</Badge>
-    ) : (
-      <Badge className="bg-red-600 text-white">❌ {absDiff.toFixed(1)} victoires de moins</Badge>
-    )
-  }
+  //   return { player1Wins, player2Wins }
+  // }
 
   return (
     <div
@@ -209,7 +204,7 @@ export default function ComparaisonPage() {
             style={{ background: "linear-gradient(to right, #f97316, #f59e0b)" }}
           ></div>
           <p className="text-xl text-orange-800 mb-8 max-w-3xl mx-auto font-medium">
-            Face-à-face entre les légendes NBA ! Comparez les performances statistiques et découvrez qui domine !
+            Comparez les performances statistiques des joueurs NBA et analysez leurs forces !
           </p>
         </div>
 
@@ -263,9 +258,8 @@ export default function ComparaisonPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {uniquePlayers.map((player) => (
-                        <SelectItem key={`${player.player_id || "unknown"}-${player.team || "no-team"}-${player.name || "no-name"}`}
-                        value={player.player_id}
-                        >
+                        <SelectItem key={player.player_id} value={player.player_id}>
+                          #{player.player_id} – {player.name} ({player.team})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -288,7 +282,7 @@ export default function ComparaisonPage() {
                         .filter((player) => player.player_id !== player1Id)
                         .map((player) => (
                           <SelectItem key={player.player_id} value={player.player_id}>
-                            {player.name} - {player.team}
+                            #{player.player_id} – {player.name || "Nom inconnu"} ({player.team || "Aucune équipe"})
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -318,43 +312,6 @@ export default function ComparaisonPage() {
             {/* Comparison Results */}
             {comparisonData && !loadingComparison ? (
               <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-                {/* Global Scores */}
-                <Card
-                  className="shadow-xl"
-                  style={{
-                    background: "rgba(255, 255, 255, 0.8)",
-                    backdropFilter: "blur(12px)",
-                    border: "2px solid #fdba74",
-                  }}
-                >
-                  <CardHeader className="text-center">
-                    <CardTitle className="flex items-center justify-center gap-3 text-2xl text-orange-900">
-                      <Trophy className="w-8 h-8" />
-                      Score Global
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-8 text-center">
-                      <div>
-                        <h3 className="text-xl font-bold text-orange-900 mb-2">{comparisonData.player1.name}</h3>
-                        <div className="text-4xl font-bold text-orange-600 mb-2">
-                          {comparisonData.global_score.player1_score.toFixed(1)}
-                        </div>
-                        {getWinContributionBadge()}
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-orange-900 mb-2">{comparisonData.player2.name}</h3>
-                        <div className="text-4xl font-bold text-blue-600 mb-2">
-                          {comparisonData.global_score.player2_score.toFixed(1)}
-                        </div>
-                        <Badge variant="outline" className="text-gray-600 border-gray-400">
-                          Référence
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Player Cards */}
                 <div className="grid gap-8" style={{ gridTemplateColumns: "1fr 1fr" }}>
                   <Card
@@ -436,244 +393,406 @@ export default function ComparaisonPage() {
                   </Card>
                 </div>
 
-                {/* Stats Comparison */}
-                <Card
-                  className="shadow-xl card-hover"
-                  style={{
-                    background: "rgba(255, 255, 255, 0.8)",
-                    backdropFilter: "blur(12px)",
-                    border: "2px solid #fdba74",
-                  }}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-3 text-2xl text-orange-900">
-                      <GitCompare className="w-8 h-8" />
-                      Comparaison Statistique
-                    </CardTitle>
-                    <CardDescription className="text-lg text-orange-700">
-                      Les barres vertes indiquent le joueur avec la meilleure performance dans chaque catégorie 🏆
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-                    {/* Points */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">Points par match</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">{comparisonData.player1.points}</span>
-                          <span className="text-xl font-bold text-blue-600">{comparisonData.player2.points}</span>
+                {/* Detailed Stats Comparison */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                  {/* Points */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #fed7aa",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                            <span className="text-2xl">🏀</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-orange-900">Points par match</h3>
+                            <p className="text-orange-700">Capacité offensive</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-orange-600">
+                            Différence:{" "}
+                            {Math.abs(comparisonData.player1.points - comparisonData.player2.points).toFixed(1)} pts
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={getProgressValue(comparisonData.player1.points, 40)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.points,
-                              comparisonData.player2.points,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={getProgressValue(comparisonData.player2.points, 40)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.points,
-                              comparisonData.player2.points,
-                              false,
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Rebounds */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">Rebonds par match</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">{comparisonData.player1.rebounds}</span>
-                          <span className="text-xl font-bold text-blue-600">{comparisonData.player2.rebounds}</span>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.points > comparisonData.player2.points
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.points === comparisonData.player2.points
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player1.points}</div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.points > comparisonData.player1.points
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.points === comparisonData.player1.points
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player2.points}</div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={getProgressValue(comparisonData.player1.rebounds, 15)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.rebounds,
-                              comparisonData.player2.rebounds,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={getProgressValue(comparisonData.player2.rebounds, 15)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.rebounds,
-                              comparisonData.player2.rebounds,
-                              false,
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Assists */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">Passes par match</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">{comparisonData.player1.assists}</span>
-                          <span className="text-xl font-bold text-blue-600">{comparisonData.player2.assists}</span>
+                  {/* Rebounds */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #bfdbfe",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-2xl">🤲</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-blue-900">Rebonds par match</h3>
+                            <p className="text-blue-700">Domination sous les panneaux</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-blue-600">
+                            Différence:{" "}
+                            {Math.abs(comparisonData.player1.rebounds - comparisonData.player2.rebounds).toFixed(1)} reb
+                          </div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={getProgressValue(comparisonData.player1.assists, 12)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.assists,
-                              comparisonData.player2.assists,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={getProgressValue(comparisonData.player2.assists, 12)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.assists,
-                              comparisonData.player2.assists,
-                              false,
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Field Goal % */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">% Réussite au tir</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">
-                            {comparisonData.player1.field_goal_percentage}%
-                          </span>
-                          <span className="text-xl font-bold text-blue-600">
-                            {comparisonData.player2.field_goal_percentage}%
-                          </span>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.rebounds > comparisonData.player2.rebounds
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.rebounds === comparisonData.player2.rebounds
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player1.rebounds}</div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.rebounds > comparisonData.player1.rebounds
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.rebounds === comparisonData.player1.rebounds
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player2.rebounds}</div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={comparisonData.player1.field_goal_percentage}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.field_goal_percentage,
-                              comparisonData.player2.field_goal_percentage,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={comparisonData.player2.field_goal_percentage}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.field_goal_percentage,
-                              comparisonData.player2.field_goal_percentage,
-                              false,
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
+                    </CardContent>
+                  </Card>
 
-                    {/* Three Point % */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">% Réussite à 3 points</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">
+                  {/* Assists */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #bbf7d0",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                            <span className="text-2xl">🎯</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-green-900">Passes par match</h3>
+                            <p className="text-green-700">Vision de jeu et leadership</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600">
+                            Différence:{" "}
+                            {Math.abs(comparisonData.player1.assists - comparisonData.player2.assists).toFixed(1)} ast
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.assists > comparisonData.player2.assists
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.assists === comparisonData.player2.assists
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player1.assists}</div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.assists > comparisonData.player1.assists
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.assists === comparisonData.player1.assists
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player2.assists}</div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Field Goal % */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #d8b4fe",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                            <span className="text-2xl">🎪</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-purple-900">% Réussite au tir</h3>
+                            <p className="text-purple-700">Efficacité offensive</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-purple-600">
+                            Différence:{" "}
+                            {Math.abs(
+                              comparisonData.player1.field_goal_percentage -
+                                comparisonData.player2.field_goal_percentage,
+                            ).toFixed(1)}
+                            %
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.field_goal_percentage >
+                              comparisonData.player2.field_goal_percentage
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.field_goal_percentage ===
+                                    comparisonData.player2.field_goal_percentage
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player1.field_goal_percentage}%</div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.field_goal_percentage >
+                              comparisonData.player1.field_goal_percentage
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.field_goal_percentage ===
+                                    comparisonData.player1.field_goal_percentage
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player2.field_goal_percentage}%</div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Three Point % */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #fde047",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                            <span className="text-2xl">🏹</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-yellow-900">% Réussite à 3 points</h3>
+                            <p className="text-yellow-700">Précision longue distance</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-yellow-600">
+                            Différence:{" "}
+                            {Math.abs(
+                              comparisonData.player1.three_point_percentage -
+                                comparisonData.player2.three_point_percentage,
+                            ).toFixed(1)}
+                            %
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.three_point_percentage >
+                              comparisonData.player2.three_point_percentage
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.three_point_percentage ===
+                                    comparisonData.player2.three_point_percentage
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">
                             {comparisonData.player1.three_point_percentage}%
-                          </span>
-                          <span className="text-xl font-bold text-blue-600">
-                            {comparisonData.player2.three_point_percentage}%
-                          </span>
+                          </div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={comparisonData.player1.three_point_percentage}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.three_point_percentage,
-                              comparisonData.player2.three_point_percentage,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={comparisonData.player2.three_point_percentage}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.three_point_percentage,
-                              comparisonData.player2.three_point_percentage,
-                              false,
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Efficiency */}
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="font-bold text-lg text-orange-900">Efficacité</span>
-                        <div className="flex gap-8">
-                          <span className="text-xl font-bold text-orange-600">{comparisonData.player1.efficiency}</span>
-                          <span className="text-xl font-bold text-blue-600">{comparisonData.player2.efficiency}</span>
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.three_point_percentage >
+                              comparisonData.player1.three_point_percentage
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.three_point_percentage ===
+                                    comparisonData.player1.three_point_percentage
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">
+                            {comparisonData.player2.three_point_percentage}%
+                          </div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <Progress
-                          value={getProgressValue(comparisonData.player1.efficiency, 40)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.efficiency,
-                              comparisonData.player2.efficiency,
-                              true,
-                            ),
-                          }}
-                        />
-                        <Progress
-                          value={getProgressValue(comparisonData.player2.efficiency, 40)}
-                          style={{
-                            height: "1rem",
-                            background: getComparisonColor(
-                              comparisonData.player1.efficiency,
-                              comparisonData.player2.efficiency,
-                              false,
-                            ),
-                          }}
-                        />
+                    </CardContent>
+                  </Card>
+
+                  {/* Efficiency */}
+                  <Card
+                    className="shadow-lg"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "2px solid #fda4af",
+                    }}
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+                            <span className="text-2xl">⚡</span>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-pink-900">Efficacité globale</h3>
+                            <p className="text-pink-700">Performance générale</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-pink-600">
+                            Différence:{" "}
+                            {Math.abs(comparisonData.player1.efficiency - comparisonData.player2.efficiency).toFixed(1)}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      <div className="grid grid-cols-2 gap-6">
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player1.efficiency > comparisonData.player2.efficiency
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player1.efficiency === comparisonData.player2.efficiency
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player1.efficiency}</div>
+                          <div className="text-lg font-medium">{comparisonData.player1.name}</div>
+                        </div>
+
+                        <div
+                          className="p-4 rounded-lg text-center"
+                          style={{
+                            background:
+                              comparisonData.player2.efficiency > comparisonData.player1.efficiency
+                                ? "linear-gradient(to bottom, #10b981, #059669)"
+                                : comparisonData.player2.efficiency === comparisonData.player1.efficiency
+                                  ? "linear-gradient(to bottom, #f59e0b, #d97706)"
+                                  : "linear-gradient(to bottom, #ef4444, #dc2626)",
+                            color: "white",
+                          }}
+                        >
+                          <div className="text-3xl font-bold mb-2">{comparisonData.player2.efficiency}</div>
+                          <div className="text-lg font-medium">{comparisonData.player2.name}</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             ) : !loadingComparison && player1Id && player2Id ? (
               <Card

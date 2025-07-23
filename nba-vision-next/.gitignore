@@ -1,27 +1,25 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Environnements virtuels
+venv/
+nba-vision-back/venv/
 
-# dependencies
-/node_modules
+# Caches Python
+__pycache__/
+*.py[cod]
 
-# next.js
-/.next/
-/out/
+# Fichiers temporaires ou de build
+*.zip
+*.tar.gz
+*.egg-info/
+*.log
 
-# production
-/build
+# Chalice files
+nba-vision-back/.chalice/deployed/
+nba-vision-back/build/
+nba-vision-back/out/
+nba-vision-back/__pycache__/
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Dossiers de dépendances ou fichiers inutiles
+node_modules/
+.DS_Store
+.env
+.env.local

@@ -1,1 +1,1 @@
-chalice
+boto3==1.*

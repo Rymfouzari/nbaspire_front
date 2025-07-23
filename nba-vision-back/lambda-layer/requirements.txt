@@ -1,0 +1,4 @@
+numpy==1.*
+pandas==2.*
+scikit-learn==1.*
+joblib==1.*

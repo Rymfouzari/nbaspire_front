@@ -16,74 +16,123 @@ import { CourtLines } from "@/components/court-lines"
 import { SpotlightEffect } from "@/components/spotlight-effect"
 
 export default function SimulationPage() {
-  const [selectedModel, setSelectedModel] = useState("")
   const [playerStats, setPlayerStats] = useState({
-    points: "",
-    rebounds: "",
-    assists: "",
-    fieldGoal: "",
-    threePoint: "",
-    freeThrow: "",
+    age: "",
+    experience: "",
+    heightWithoutShoes: "",
+    heightWithShoes: "",
+    weight: "",
+    wingspan: "",
+    verticalReach: "",
+    bodyFatPercentage: "",
+    handLength: "",
+    handWidth: "",
+    position: "",
   })
   const [prediction, setPrediction] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const models = [
-    {
-      id: "linear_regression",
-      name: "Régression Linéaire",
-      description: "Modèle simple basé sur les corrélations linéaires",
-      accuracy: 78,
-      complexity: "Faible",
-    },
-    {
-      id: "random_forest",
-      name: "Random Forest",
-      description: "Ensemble d'arbres de décision pour plus de précision",
-      accuracy: 85,
-      complexity: "Moyenne",
-    },
-    {
-      id: "neural_network",
-      name: "Réseau de Neurones",
-      description: "Deep learning pour capturer les patterns complexes",
-      accuracy: 92,
-      complexity: "Élevée",
-    },
-    {
-      id: "xgboost",
-      name: "XGBoost",
-      description: "Gradient boosting optimisé pour les performances",
-      accuracy: 89,
-      complexity: "Élevée",
-    },
+  const positions = [
+    { value: "PG", label: "PG - Point Guard (Meneur)" },
+    { value: "SG", label: "SG - Shooting Guard (Arrière)" },
+    { value: "SF", label: "SF - Small Forward (Ailier)" },
+    { value: "PF", label: "PF - Power Forward (Ailier Fort)" },
+    { value: "C", label: "C - Center (Pivot)" },
   ]
 
   const handlePredict = async () => {
-    if (!selectedModel || !playerStats.points || !playerStats.rebounds || !playerStats.assists) {
+    console.log("🔥 BOUTON CLIQUÉ !")
+    console.log("📋 État du formulaire:", playerStats)
+    console.log("✅ Formulaire valide ?", isFormValid())
+
+    if (!playerStats.age || !playerStats.experience || !playerStats.position) {
+      console.log("❌ Formulaire invalide - champs manquants")
+      setError("Veuillez remplir tous les champs obligatoires (âge, expérience, poste)")
       return
     }
 
+    console.log("🚀 Démarrage de la prédiction...")
     setIsLoading(true)
+    setError(null)
+    setPrediction(null)
 
-    // Simulation d'une prédiction (en réalité, cela ferait appel à votre API ML)
-    setTimeout(() => {
-      const mockPrediction = {
-        mvpProbability: Math.random() * 100,
-        allStarProbability: Math.random() * 100,
-        playoffSuccess: Math.random() * 100,
-        nextSeasonPoints: Number.parseFloat(playerStats.points) + (Math.random() - 0.5) * 5,
-        confidence: 85 + Math.random() * 10,
-        factors: [
-          { name: "Performance offensive", impact: 85, positive: true },
-          { name: "Efficacité au tir", impact: 72, positive: true },
-          { name: "Contribution défensive", impact: 68, positive: false },
-          { name: "Leadership", impact: 91, positive: true },
-        ],
+    try {
+      // Préparer les données pour l'API backend
+      const requestData = {
+        age: Number(playerStats.age),
+        pos: playerStats.position,
+        experience: Number(playerStats.experience),
+        height_wo_shoes: Number(playerStats.heightWithoutShoes) || 0,
+        height_w_shoes: Number(playerStats.heightWithShoes) || 0,
+        weight: Number(playerStats.weight) || 0,
+        wingspan: Number(playerStats.wingspan) || 0,
+        standing_reach: Number(playerStats.verticalReach) || 0,
+        body_fat_pct: Number(playerStats.bodyFatPercentage) || 0,
+        hand_length: Number(playerStats.handLength) || 0,
+        hand_width: Number(playerStats.handWidth) || 0,
       }
-      setPrediction(mockPrediction)
+
+      console.log("Envoi des données:", requestData)
+
+      // Appel à l'API backend avec plus de détails d'erreur
+      const response = await fetch(`https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev/predict`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(requestData),
+      })
+
+      console.log("Response status:", response.status)
+      console.log("Response headers:", response.headers)
+
+      if (!response.ok) {
+        let errorMessage = `Erreur HTTP: ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          // Si on ne peut pas parser le JSON d'erreur
+          const errorText = await response.text()
+          errorMessage = errorText || errorMessage
+        }
+        throw new Error(errorMessage)
+      }
+
+      const predictionData = await response.json()
+      console.log("Réponse de l'API:", predictionData)
+
+      // Utiliser directement les données de l'API
+      setPrediction(predictionData)
+    } catch (err) {
+      console.error("Erreur détaillée:", err)
+
+      // Messages d'erreur plus spécifiques
+      let errorMessage = "Une erreur est survenue lors de la prédiction"
+
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        errorMessage = "Impossible de se connecter au serveur. Vérifiez votre connexion internet."
+      } else if (err instanceof Error) {
+        errorMessage = err.message
+      }
+
+      setError(errorMessage)
+    } finally {
       setIsLoading(false)
-    }, 2000)
+    }
+  }
+
+  const isFormValid = () => {
+    const valid = playerStats.age && playerStats.experience && playerStats.position
+    console.log("🔍 Validation:", {
+      age: playerStats.age,
+      experience: playerStats.experience,
+      position: playerStats.position,
+      valid: valid,
+    })
+    return valid
   }
 
   return (
@@ -156,81 +205,10 @@ export default function SimulationPage() {
           </p>
         </div>
 
-        <div className="grid gap-8" style={{ gridTemplateColumns: "1fr 2fr" }}>
+        <div className="grid gap-8" style={{ gridTemplateColumns: "1fr 1fr" }}>
           {/* Configuration Panel */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {/* Model Selection */}
-            <Card
-              className="card-hover"
-              style={{
-                background: "linear-gradient(to bottom right, white, #faf5ff)",
-                border: "2px solid #d8b4fe",
-              }}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3 text-xl text-purple-900">
-                  <Brain className="w-6 h-6" />
-                  Sélection du Modèle
-                </CardTitle>
-                <CardDescription className="text-purple-700 font-medium">
-                  Choisissez le modèle d'IA à utiliser pour la prédiction
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#faf5ff",
-                      border: "2px solid #d8b4fe",
-                    }}
-                  >
-                    <SelectValue placeholder="Choisir un modèle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {selectedModel && (
-                  <div
-                    className="p-4 rounded-lg border-2 mt-6"
-                    style={{
-                      background: "#faf5ff",
-                      borderColor: "#d8b4fe",
-                    }}
-                  >
-                    {(() => {
-                      const model = models.find((m) => m.id === selectedModel)
-                      return model ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                          <h4 className="font-bold text-purple-900 text-lg">{model.name}</h4>
-                          <p className="text-purple-700 font-medium">{model.description}</p>
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-purple-800">Précision:</span>
-                            <Badge className="text-white text-lg px-3 py-1" style={{ background: "#10b981" }}>
-                              {model.accuracy}%
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-purple-800">Complexité:</span>
-                            <Badge variant="outline" className="border-purple-400 text-purple-700 text-lg px-3 py-1">
-                              {model.complexity}
-                            </Badge>
-                          </div>
-                        </div>
-                      ) : null
-                    })()}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Player Stats Input */}
+          <div>
+            {/* Player Physical Stats Input */}
             <Card
               className="card-hover"
               style={{
@@ -241,146 +219,292 @@ export default function SimulationPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-3 text-xl text-orange-900">
                   <Target className="w-6 h-6" />
-                  Statistiques du Joueur
+                  Caractéristiques du Joueur
                 </CardTitle>
                 <CardDescription className="text-orange-700 font-medium">
-                  Entrez les statistiques pour la prédiction
+                  Entrez les données physiques et techniques pour la prédiction
                 </CardDescription>
               </CardHeader>
               <CardContent style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div>
-                  <Label htmlFor="points" className="text-lg font-bold text-orange-900">
-                    Points par match
-                  </Label>
-                  <Input
-                    id="points"
-                    type="number"
-                    placeholder="25.5"
-                    value={playerStats.points}
-                    onChange={(e) => setPlayerStats({ ...playerStats, points: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+                {/* Age et Expérience */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="age" className="text-lg font-bold text-orange-900">
+                      Âge *
+                    </Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      placeholder="25"
+                      value={playerStats.age}
+                      onChange={(e) => setPlayerStats({ ...playerStats, age: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="experience" className="text-lg font-bold text-orange-900">
+                      Années d'expérience *
+                    </Label>
+                    <Input
+                      id="experience"
+                      type="number"
+                      placeholder="5"
+                      value={playerStats.experience}
+                      onChange={(e) => setPlayerStats({ ...playerStats, experience: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="rebounds" className="text-lg font-bold text-orange-900">
-                    Rebonds par match
-                  </Label>
-                  <Input
-                    id="rebounds"
-                    type="number"
-                    placeholder="8.2"
-                    value={playerStats.rebounds}
-                    onChange={(e) => setPlayerStats({ ...playerStats, rebounds: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+
+                {/* Tailles */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="heightWithoutShoes" className="text-lg font-bold text-orange-900">
+                      Taille sans chaussures (cm)
+                    </Label>
+                    <Input
+                      id="heightWithoutShoes"
+                      type="number"
+                      placeholder="198"
+                      value={playerStats.heightWithoutShoes}
+                      onChange={(e) => setPlayerStats({ ...playerStats, heightWithoutShoes: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="heightWithShoes" className="text-lg font-bold text-orange-900">
+                      Taille avec chaussures (cm)
+                    </Label>
+                    <Input
+                      id="heightWithShoes"
+                      type="number"
+                      placeholder="201"
+                      value={playerStats.heightWithShoes}
+                      onChange={(e) => setPlayerStats({ ...playerStats, heightWithShoes: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="assists" className="text-lg font-bold text-orange-900">
-                    Passes par match
-                  </Label>
-                  <Input
-                    id="assists"
-                    type="number"
-                    placeholder="6.1"
-                    value={playerStats.assists}
-                    onChange={(e) => setPlayerStats({ ...playerStats, assists: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+
+                {/* Poids et Envergure */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="weight" className="text-lg font-bold text-orange-900">
+                      Poids (kg)
+                    </Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      placeholder="95"
+                      value={playerStats.weight}
+                      onChange={(e) => setPlayerStats({ ...playerStats, weight: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="wingspan" className="text-lg font-bold text-orange-900">
+                      Envergure (cm)
+                    </Label>
+                    <Input
+                      id="wingspan"
+                      type="number"
+                      placeholder="210"
+                      value={playerStats.wingspan}
+                      onChange={(e) => setPlayerStats({ ...playerStats, wingspan: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="fieldGoal" className="text-lg font-bold text-orange-900">
-                    % Réussite au tir
-                  </Label>
-                  <Input
-                    id="fieldGoal"
-                    type="number"
-                    placeholder="48.5"
-                    value={playerStats.fieldGoal}
-                    onChange={(e) => setPlayerStats({ ...playerStats, fieldGoal: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+
+                {/* Portée verticale et Masse graisseuse */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="verticalReach" className="text-lg font-bold text-orange-900">
+                      Portée verticale (cm)
+                    </Label>
+                    <Input
+                      id="verticalReach"
+                      type="number"
+                      placeholder="270"
+                      value={playerStats.verticalReach}
+                      onChange={(e) => setPlayerStats({ ...playerStats, verticalReach: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="bodyFatPercentage" className="text-lg font-bold text-orange-900">
+                      % Masse graisseuse
+                    </Label>
+                    <Input
+                      id="bodyFatPercentage"
+                      type="number"
+                      placeholder="8.5"
+                      step="0.1"
+                      value={playerStats.bodyFatPercentage}
+                      onChange={(e) => setPlayerStats({ ...playerStats, bodyFatPercentage: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="threePoint" className="text-lg font-bold text-orange-900">
-                    % Réussite à 3pts
-                  </Label>
-                  <Input
-                    id="threePoint"
-                    type="number"
-                    placeholder="35.2"
-                    value={playerStats.threePoint}
-                    onChange={(e) => setPlayerStats({ ...playerStats, threePoint: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+
+                {/* Dimensions des mains */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="handLength" className="text-lg font-bold text-orange-900">
+                      Longueur de la main (cm)
+                    </Label>
+                    <Input
+                      id="handLength"
+                      type="number"
+                      placeholder="22.5"
+                      step="0.1"
+                      value={playerStats.handLength}
+                      onChange={(e) => setPlayerStats({ ...playerStats, handLength: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="handWidth" className="text-lg font-bold text-orange-900">
+                      Largeur de la main (cm)
+                    </Label>
+                    <Input
+                      id="handWidth"
+                      type="number"
+                      placeholder="25.0"
+                      step="0.1"
+                      value={playerStats.handWidth}
+                      onChange={(e) => setPlayerStats({ ...playerStats, handWidth: e.target.value })}
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    />
+                  </div>
                 </div>
+
+                {/* Poste */}
                 <div>
-                  <Label htmlFor="freeThrow" className="text-lg font-bold text-orange-900">
-                    % Lancers francs
+                  <Label htmlFor="position" className="text-lg font-bold text-orange-900">
+                    Poste *
                   </Label>
-                  <Input
-                    id="freeThrow"
-                    type="number"
-                    placeholder="82.1"
-                    value={playerStats.freeThrow}
-                    onChange={(e) => setPlayerStats({ ...playerStats, freeThrow: e.target.value })}
-                    className="h-12 text-lg"
-                    style={{
-                      background: "#fff7ed",
-                      border: "2px solid #fdba74",
-                    }}
-                  />
+                  <Select
+                    value={playerStats.position}
+                    onValueChange={(value) => setPlayerStats({ ...playerStats, position: value })}
+                  >
+                    <SelectTrigger
+                      className="h-12 text-lg"
+                      style={{
+                        background: "#fff7ed",
+                        border: "2px solid #fdba74",
+                      }}
+                    >
+                      <SelectValue placeholder="Sélectionner un poste" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((position) => (
+                        <SelectItem key={position.value} value={position.value}>
+                          {position.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <Button
-                  onClick={handlePredict}
-                  disabled={
-                    !selectedModel || !playerStats.points || !playerStats.rebounds || !playerStats.assists || isLoading
-                  }
+                  onClick={() => {
+                    console.log("🖱️ Clic sur le bouton détecté")
+                    handlePredict()
+                  }}
+                  disabled={!isFormValid() || isLoading}
                   className="w-full shadow-xl border-2 border-orange-400 text-lg px-8 py-4 scale-hover-css"
                   style={{
-                    background: "linear-gradient(to right, #ea580c, #c2410c)",
+                    background:
+                      isFormValid() && !isLoading
+                        ? "linear-gradient(to right, #ea580c, #c2410c)"
+                        : "linear-gradient(to right, #9ca3af, #6b7280)",
                     color: "white",
+                    cursor: isFormValid() && !isLoading ? "pointer" : "not-allowed",
                   }}
                 >
                   {isLoading ? (
                     <>
-                      <Brain className="w-5 h-5 mr-2 spin-slow-css" />
+                      <Brain className="w-5 h-5 mr-2 animate-spin" />
                       Calcul en cours...
                     </>
                   ) : (
                     <>
                       <Brain className="w-5 h-5 mr-2" />
-                      Lancer la Prédiction
+                      {isFormValid() ? "Lancer la Prédiction" : "Remplir les champs obligatoires"}
                     </>
                   )}
                 </Button>
+
+                <p className="text-sm text-orange-600 text-center">* Champs obligatoires pour lancer la prédiction</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Results Panel */}
           <div>
-            {prediction ? (
+            {error ? (
+              <Card
+                className="shadow-xl"
+                style={{
+                  background: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(12px)",
+                  border: "2px solid #ef4444",
+                }}
+              >
+                <CardContent className="text-center py-16">
+                  <AlertCircle
+                    style={{ width: "5rem", height: "5rem", margin: "0 auto", color: "#ef4444" }}
+                    className="mb-6"
+                  />
+                  <h3 className="text-3xl font-bold text-red-900 mb-4">Erreur de Prédiction</h3>
+                  <p className="text-xl text-red-700 mb-6 font-medium">{error}</p>
+                  <div className="text-lg text-red-600 font-medium">Veuillez vérifier vos données et réessayer.</div>
+                </CardContent>
+              </Card>
+            ) : prediction ? (
               <Tabs defaultValue="predictions" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 <TabsList
                   className="grid grid-cols-2 p-1 rounded-lg"
@@ -421,15 +545,13 @@ export default function SimulationPage() {
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-yellow-900">
-                          <Award className="w-6 h-6 text-yellow-600" />🏆 Probabilité MVP
+                          <Award className="w-6 h-6 text-yellow-600" />🏆 Score Global
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-yellow-600 mb-3">
-                          {prediction.mvpProbability.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.mvpProbability} className="h-4 mb-3" />
-                        <p className="text-yellow-700 font-medium">Basé sur les performances actuelles</p>
+                        <div className="text-4xl font-bold text-yellow-600 mb-3">{prediction.overall_score}</div>
+                        <Progress value={prediction.overall_score} className="h-4 mb-3" />
+                        <p className="text-yellow-700 font-medium">Évaluation globale du potentiel</p>
                       </CardContent>
                     </Card>
 
@@ -442,15 +564,13 @@ export default function SimulationPage() {
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-blue-900">
-                          <Target className="w-6 h-6 text-blue-600" />⭐ Sélection All-Star
+                          <Target className="w-6 h-6 text-blue-600" />⭐ Prédictions Détaillées
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-blue-600 mb-3">
-                          {prediction.allStarProbability.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.allStarProbability} className="h-4 mb-3" />
-                        <p className="text-blue-700 font-medium">Probabilité de sélection cette saison</p>
+                        <div className="text-4xl font-bold text-blue-600 mb-3">{prediction.detailed_predictions}</div>
+                        <Progress value={prediction.detailed_predictions} className="h-4 mb-3" />
+                        <p className="text-blue-700 font-medium">Analyse approfondie des capacités</p>
                       </CardContent>
                     </Card>
 
@@ -464,40 +584,13 @@ export default function SimulationPage() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-green-900">
                           <TrendingUp className="w-6 h-6 text-green-600" />
-                          Succès en Playoffs
+                          Points Forts
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-green-600 mb-3">
-                          {prediction.playoffSuccess.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.playoffSuccess} className="h-4 mb-3" />
-                        <p className="text-green-700 font-medium">Impact sur le succès de l'équipe</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card
-                      className="card-hover"
-                      style={{
-                        background: "linear-gradient(to bottom right, white, #faf5ff)",
-                        border: "2px solid #d8b4fe",
-                      }}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-xl text-purple-900">
-                          <BarChart3 className="w-6 h-6 text-purple-600" />📊 Points Prédits
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-4xl font-bold text-purple-600 mb-3">
-                          {prediction.nextSeasonPoints.toFixed(1)}
-                        </div>
-                        <p className="text-purple-700 font-medium mb-3">Points par match saison prochaine</p>
-                        <div className="flex items-center gap-2">
-                          <Badge className="text-white text-lg px-3 py-1" style={{ background: "#8b5cf6" }}>
-                            Confiance: {prediction.confidence.toFixed(0)}%
-                          </Badge>
-                        </div>
+                        <div className="text-4xl font-bold text-green-600 mb-3">{prediction.strengths}</div>
+                        <Progress value={prediction.strengths} className="h-4 mb-3" />
+                        <p className="text-green-700 font-medium">Identification des atouts majeurs</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -522,29 +615,44 @@ export default function SimulationPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                      {prediction.factors.map((factor: any, index: number) => (
-                        <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-lg text-orange-900">{factor.name}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl font-bold text-orange-600">{factor.impact}%</span>
-                              <Badge
-                                className="text-white"
-                                style={{ background: factor.positive ? "#10b981" : "#ef4444" }}
-                              >
-                                {factor.positive ? "Positif" : "Négatif"}
-                              </Badge>
+                      {(() => {
+                        const factors = [
+                          {
+                            name: "Score global",
+                            impact: prediction.overall_score,
+                            positive: prediction.overall_score > 50,
+                          },
+                          {
+                            name: "Prédictions détaillées",
+                            impact: prediction.detailed_predictions,
+                            positive: prediction.detailed_predictions > 50,
+                          },
+                          { name: "Points forts", impact: prediction.strengths, positive: prediction.strengths > 50 },
+                        ]
+                        return factors.map((factor: any, index: number) => (
+                          <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-lg text-orange-900">{factor.name}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl font-bold text-orange-600">{factor.impact}</span>
+                                <Badge
+                                  className="text-white"
+                                  style={{ background: factor.positive ? "#10b981" : "#ef4444" }}
+                                >
+                                  {factor.positive ? "Positif" : "Négatif"}
+                                </Badge>
+                              </div>
                             </div>
+                            <Progress
+                              value={factor.impact}
+                              className="h-4"
+                              style={{
+                                background: factor.positive ? "#dcfce7" : "#fee2e2",
+                              }}
+                            />
                           </div>
-                          <Progress
-                            value={factor.impact}
-                            className="h-4"
-                            style={{
-                              background: factor.positive ? "#dcfce7" : "#fee2e2",
-                            }}
-                          />
-                        </div>
-                      ))}
+                        ))
+                      })()}
                     </CardContent>
                   </Card>
 
@@ -572,8 +680,8 @@ export default function SimulationPage() {
                             }}
                           ></div>
                           <p className="text-lg font-medium text-green-800">
-                            <strong>Améliorer la défense:</strong> Augmenter les interceptions et les contres pour un
-                            impact plus complet
+                            <strong>Optimiser la condition physique:</strong> Maintenir un pourcentage de masse
+                            graisseuse optimal pour le poste
                           </p>
                         </div>
                         <div className="flex items-start gap-4">
@@ -587,7 +695,8 @@ export default function SimulationPage() {
                             }}
                           ></div>
                           <p className="text-lg font-medium text-blue-800">
-                            <strong>Consistance offensive:</strong> Maintenir un pourcentage de tir élevé sur la durée
+                            <strong>Développer les compétences techniques:</strong> Exploiter les avantages physiques
+                            naturels
                           </p>
                         </div>
                         <div className="flex items-start gap-4">
@@ -601,7 +710,8 @@ export default function SimulationPage() {
                             }}
                           ></div>
                           <p className="text-lg font-medium text-orange-800">
-                            <strong>Leadership:</strong> Développer les aspects de mentorat et de leadership d'équipe
+                            <strong>Adaptation au poste:</strong> Maximiser l'efficacité selon les caractéristiques
+                            physiques
                           </p>
                         </div>
                       </div>
@@ -625,10 +735,10 @@ export default function SimulationPage() {
                   />
                   <h3 className="text-3xl font-bold text-orange-900 mb-4">Prêt pour la Simulation !</h3>
                   <p className="text-xl text-orange-700 mb-6 font-medium">
-                    Sélectionnez un modèle et entrez les statistiques pour commencer la prédiction
+                    Entrez les caractéristiques physiques pour commencer la prédiction
                   </p>
                   <div className="text-lg text-orange-600 font-medium">
-                    Nos modèles d'IA analysent plus de 50 variables pour des prédictions précises !
+                    Nos modèles d'IA analysent les données anthropométriques pour des prédictions précises !
                   </div>
                 </CardContent>
               </Card>

@@ -19,7 +19,7 @@ export default function JoueursPage() {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const res = await fetch("https://xdlamc8612.execute-api.eu-west-1.amazonaws.com/api/players")
+        const res = await fetch("https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev/players")
         const data = await res.json()
         const formatted = data.data.map((p: any, index: number) => ({
           id: p.player_id || index,
