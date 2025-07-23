@@ -8,6 +8,9 @@ import os
 import logging
 import traceback
 
+from chalicelib.ensure_scipy import ensure_scipy
+ensure_scipy()
+
 logging.basicConfig(level=logging.DEBUG)
 
 print("Current working directory:", os.getcwd())
