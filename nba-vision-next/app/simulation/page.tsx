@@ -66,7 +66,7 @@ export default function SimulationPage() {
       }
 
       // Appel à l'API backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/predict`, {
+      const response = await fetch(`https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -6,8 +6,10 @@
       "api_gateway_stage": "dev",
       "manage_iam_role": true,
       "autogen_policy": true,
+      "lambda_timeout": 360,
+      "memory_size": 256,
       "environment_variables": {
-        "MODEL_S3_BUCKET": "${aws:s3:::my‑nba‑models}"
+        "MODEL_S3_BUCKET": "my-nba-models"
       },
       "cors": {
         "allow_origin": "*",
@@ -15,9 +17,9 @@
         "max_age": 600
       },
       "layers": [
-        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_numpy:1",
-        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_pandas:2",
-        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_sklearn:2"
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_core:1",
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_pandas:3",
+        "arn:aws:lambda:eu-west-1:866605740825:layer:nba_predictor_sklearn:3"
       ],
       "package": {
         "no_deps": true,
@@ -31,6 +33,12 @@
           "*.dist-info/**",
           "*.pyc",
           "__pycache__/**"
+        ],
+        "extra_files": [
+          {
+            "source": "./models",
+            "target": "./models"
+          }
         ]
       }
     }

@@ -7,6 +7,8 @@ from chalice import Chalice, Response, BadRequestError
 import os
 import logging
 import traceback
+from joblib import parallel_backend
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -31,8 +33,7 @@ def add_cors_headers(event, get_response):
     return response
 
 model = None
-scaler = None
-label_encoder = None
+
 
 def compute_score(player_row):
     weights = {
@@ -47,27 +48,31 @@ def compute_score(player_row):
 
 
 def load_ml_models():
-    global model, scaler, label_encoder
-    base_path = os.getcwd()
-    print("Loading ML models...")
-    print("Base directory:", base_path)
+    global model
+
+    s3 = boto3.client("s3")
+    bucket_name = "my-nba-models"
+    model_key = "multi_output_lr.pkl"
+    local_path = f"/tmp/{model_key}"
 
     try:
-        model_path = os.path.join(base_path, 'multi_output_debutants_xgboost_model.pkl')
-        scaler_path = os.path.join(base_path, 'scaler_deb_xgb.pkl')
-        label_encoder_path = os.path.join(base_path, 'label_encoder_deb_xbg.pkl')
+        print("📡 Téléchargement du modèle depuis S3...")
+        s3.download_file(bucket_name, model_key, local_path)
 
-        model = joblib.load(model_path)
-        scaler = joblib.load(scaler_path)
-        label_encoder = joblib.load(label_encoder_path)
+        # Utilisation du backend threading pour éviter le multiprocessing bloqué
+        from joblib import parallel_backend
+        with parallel_backend('threading'):
+            model = joblib.load(local_path)
 
-        print("=== ALL ML MODELS LOADED SUCCESSFULLY ===")
-
+        print("✅ Modèle chargé avec succès depuis S3.")
     except Exception as e:
-        print("=== ERROR LOADING ML MODELS ===")
+        print("❌ Erreur lors du chargement :", e)
         traceback.print_exc()
-        print("=== END OF TRACEBACK ===")
         raise e
+
+
+
+
 
 def run_athena_query(query: str):
     response = client.start_query_execution(
@@ -94,30 +99,37 @@ def run_athena_query(query: str):
 def predict_player():
     try:
         print("Predict route triggered")
-        global model, scaler, label_encoder
-
-        if model is None or scaler is None or label_encoder is None:
-            load_ml_models()
+        global model
 
         data = app.current_request.json_body
         print("Received data:", data)
 
-        position = data.get('position')
-        if position not in label_encoder['pos'].classes_:
+        # Encodage manuel de la position
+        pos_mapping = {'PG': 0, 'SG': 1, 'SF': 2, 'PF': 3, 'C': 4}
+        position = data.get('pos')
+
+        if position not in pos_mapping:
             raise BadRequestError(f"Position inconnue: {position}")
 
-        pos_encoded = label_encoder['pos'].transform([position])[0]
+        pos_encoded = pos_mapping[position]
 
+        # Construction des features dans l’ordre requis
         features = [
-            data['age'], data['experience'], data['heightWithoutShoes'],
-            data['heightWithShoes'], data['weight'], data['wingspan'],
-            data['verticalReach'], data['bodyFatPercentage'],
-            data['handLength'], data['handWidth'], pos_encoded
+            data['age'],
+            pos_encoded,  # encodé manuellement ici
+            data['experience'],
+            data['height_wo_shoes'],
+            data['height_w_shoes'],
+            data['weight'],
+            data['wingspan'],
+            data['standing_reach'],
+            data['body_fat_pct'],
+            data['hand_length'],
+            data['hand_width']
         ]
 
-        features_array = np.array(features).reshape(1, -1)
-        scaled_features = scaler.transform(features_array)
-        prediction = model.predict(scaled_features)[0]
+        features_array = np.array(features, dtype=np.float64).reshape(1, -1)
+        prediction = model.predict(features_array)[0]
 
         response = {
             "mvpProbability": float(prediction[0]),
@@ -138,6 +150,8 @@ def predict_player():
         print("=== ERROR IN PREDICT ROUTE ===")
         traceback.print_exc()
         return Response(body={"error": str(e)}, status_code=400)
+
+
 
 @app.route('/players')
 def get_players():
@@ -216,3 +230,8 @@ def compare_players(player1_id, player2_id):
 def health():
     loaded = model is not None and scaler is not None and label_encoder is not None
     return {'status': 'ok', 'model_loaded': loaded}
+
+try:
+    load_ml_models()
+except Exception as e:
+    print("⚠️ Échec du chargement du modèle au démarrage :", e)
