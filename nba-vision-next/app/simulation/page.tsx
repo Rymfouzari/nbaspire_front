@@ -42,71 +42,97 @@ export default function SimulationPage() {
   ]
 
   const handlePredict = async () => {
+    console.log("🔥 BOUTON CLIQUÉ !")
+    console.log("📋 État du formulaire:", playerStats)
+    console.log("✅ Formulaire valide ?", isFormValid())
+
     if (!playerStats.age || !playerStats.experience || !playerStats.position) {
+      console.log("❌ Formulaire invalide - champs manquants")
+      setError("Veuillez remplir tous les champs obligatoires (âge, expérience, poste)")
       return
     }
 
+    console.log("🚀 Démarrage de la prédiction...")
     setIsLoading(true)
     setError(null)
+    setPrediction(null)
 
     try {
       // Préparer les données pour l'API backend
       const requestData = {
-        age: Number.parseInt(playerStats.age),
-        experience: Number.parseInt(playerStats.experience),
-        heightWithoutShoes: Number.parseFloat(playerStats.heightWithoutShoes) || 0,
-        heightWithShoes: Number.parseFloat(playerStats.heightWithShoes) || 0,
-        weight: Number.parseFloat(playerStats.weight) || 0,
-        wingspan: Number.parseFloat(playerStats.wingspan) || 0,
-        verticalReach: Number.parseFloat(playerStats.verticalReach) || 0,
-        bodyFatPercentage: Number.parseFloat(playerStats.bodyFatPercentage) || 0,
-        handLength: Number.parseFloat(playerStats.handLength) || 0,
-        handWidth: Number.parseFloat(playerStats.handWidth) || 0,
-        position: playerStats.position,
+        age: Number(playerStats.age),
+        pos: playerStats.position,
+        experience: Number(playerStats.experience),
+        height_wo_shoes: Number(playerStats.heightWithoutShoes) || 0,
+        height_w_shoes: Number(playerStats.heightWithShoes) || 0,
+        weight: Number(playerStats.weight) || 0,
+        wingspan: Number(playerStats.wingspan) || 0,
+        standing_reach: Number(playerStats.verticalReach) || 0,
+        body_fat_pct: Number(playerStats.bodyFatPercentage) || 0,
+        hand_length: Number(playerStats.handLength) || 0,
+        hand_width: Number(playerStats.handWidth) || 0,
       }
 
-      // Appel à l'API backend
+      console.log("Envoi des données:", requestData)
+
+      // Appel à l'API backend avec plus de détails d'erreur
       const response = await fetch(`https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev/predict`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(requestData),
       })
 
+      console.log("Response status:", response.status)
+      console.log("Response headers:", response.headers)
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Erreur lors de la prédiction")
+        let errorMessage = `Erreur HTTP: ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorMessage
+        } catch (e) {
+          // Si on ne peut pas parser le JSON d'erreur
+          const errorText = await response.text()
+          errorMessage = errorText || errorMessage
+        }
+        throw new Error(errorMessage)
       }
 
       const predictionData = await response.json()
+      console.log("Réponse de l'API:", predictionData)
+
+      // Utiliser directement les données de l'API
       setPrediction(predictionData)
     } catch (err) {
-      console.error("Erreur lors de la prédiction:", err)
-      setError(err instanceof Error ? err.message : "Une erreur est survenue")
+      console.error("Erreur détaillée:", err)
 
-      // Fallback avec données simulées en cas d'erreur
-      const mockPrediction = {
-        mvpProbability: Math.random() * 100,
-        allStarProbability: Math.random() * 100,
-        playoffSuccess: Math.random() * 100,
-        nextSeasonPoints: 15 + Math.random() * 20,
-        confidence: 85 + Math.random() * 10,
-        factors: [
-          { name: "Attributs physiques", impact: 85, positive: true },
-          { name: "Expérience", impact: 72, positive: true },
-          { name: "Poste adapté", impact: 68, positive: false },
-          { name: "Potentiel athlétique", impact: 91, positive: true },
-        ],
+      // Messages d'erreur plus spécifiques
+      let errorMessage = "Une erreur est survenue lors de la prédiction"
+
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        errorMessage = "Impossible de se connecter au serveur. Vérifiez votre connexion internet."
+      } else if (err instanceof Error) {
+        errorMessage = err.message
       }
-      setPrediction(mockPrediction)
+
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
   }
 
   const isFormValid = () => {
-    return playerStats.age && playerStats.experience && playerStats.position
+    const valid = playerStats.age && playerStats.experience && playerStats.position
+    console.log("🔍 Validation:", {
+      age: playerStats.age,
+      experience: playerStats.experience,
+      position: playerStats.position,
+      valid: valid,
+    })
+    return valid
   }
 
   return (
@@ -116,8 +142,10 @@ export default function SimulationPage() {
     >
       {/* Dynamic Court Background */}
       <CourtLines />
+
       {/* Animated Basketballs */}
       <FloatingBasketballs count={8} />
+
       {/* Spotlight Effect */}
       <SpotlightEffect />
 
@@ -198,14 +226,6 @@ export default function SimulationPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {/* Affichage d'erreur */}
-                {error && (
-                  <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-md">
-                    <p className="text-sm">⚠️ {error}</p>
-                    <p className="text-xs mt-1">Utilisation des données simulées en attendant.</p>
-                  </div>
-                )}
-
                 {/* Age et Expérience */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -430,12 +450,19 @@ export default function SimulationPage() {
                 </div>
 
                 <Button
-                  onClick={handlePredict}
+                  onClick={() => {
+                    console.log("🖱️ Clic sur le bouton détecté")
+                    handlePredict()
+                  }}
                   disabled={!isFormValid() || isLoading}
                   className="w-full shadow-xl border-2 border-orange-400 text-lg px-8 py-4 scale-hover-css"
                   style={{
-                    background: "linear-gradient(to right, #ea580c, #c2410c)",
+                    background:
+                      isFormValid() && !isLoading
+                        ? "linear-gradient(to right, #ea580c, #c2410c)"
+                        : "linear-gradient(to right, #9ca3af, #6b7280)",
                     color: "white",
+                    cursor: isFormValid() && !isLoading ? "pointer" : "not-allowed",
                   }}
                 >
                   {isLoading ? (
@@ -446,7 +473,7 @@ export default function SimulationPage() {
                   ) : (
                     <>
                       <Brain className="w-5 h-5 mr-2" />
-                      Lancer la Prédiction
+                      {isFormValid() ? "Lancer la Prédiction" : "Remplir les champs obligatoires"}
                     </>
                   )}
                 </Button>
@@ -458,7 +485,26 @@ export default function SimulationPage() {
 
           {/* Results Panel */}
           <div>
-            {prediction ? (
+            {error ? (
+              <Card
+                className="shadow-xl"
+                style={{
+                  background: "rgba(255, 255, 255, 0.8)",
+                  backdropFilter: "blur(12px)",
+                  border: "2px solid #ef4444",
+                }}
+              >
+                <CardContent className="text-center py-16">
+                  <AlertCircle
+                    style={{ width: "5rem", height: "5rem", margin: "0 auto", color: "#ef4444" }}
+                    className="mb-6"
+                  />
+                  <h3 className="text-3xl font-bold text-red-900 mb-4">Erreur de Prédiction</h3>
+                  <p className="text-xl text-red-700 mb-6 font-medium">{error}</p>
+                  <div className="text-lg text-red-600 font-medium">Veuillez vérifier vos données et réessayer.</div>
+                </CardContent>
+              </Card>
+            ) : prediction ? (
               <Tabs defaultValue="predictions" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 <TabsList
                   className="grid grid-cols-2 p-1 rounded-lg"
@@ -499,15 +545,13 @@ export default function SimulationPage() {
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-yellow-900">
-                          <Award className="w-6 h-6 text-yellow-600" />🏆 Probabilité MVP
+                          <Award className="w-6 h-6 text-yellow-600" />🏆 Score Global
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-yellow-600 mb-3">
-                          {prediction.mvpProbability.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.mvpProbability} className="h-4 mb-3" />
-                        <p className="text-yellow-700 font-medium">Basé sur les caractéristiques physiques</p>
+                        <div className="text-4xl font-bold text-yellow-600 mb-3">{prediction.overall_score}</div>
+                        <Progress value={prediction.overall_score} className="h-4 mb-3" />
+                        <p className="text-yellow-700 font-medium">Évaluation globale du potentiel</p>
                       </CardContent>
                     </Card>
 
@@ -520,15 +564,13 @@ export default function SimulationPage() {
                     >
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-blue-900">
-                          <Target className="w-6 h-6 text-blue-600" />⭐ Sélection All-Star
+                          <Target className="w-6 h-6 text-blue-600" />⭐ Prédictions Détaillées
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-blue-600 mb-3">
-                          {prediction.allStarProbability.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.allStarProbability} className="h-4 mb-3" />
-                        <p className="text-blue-700 font-medium">Probabilité de sélection cette saison</p>
+                        <div className="text-4xl font-bold text-blue-600 mb-3">{prediction.detailed_predictions}</div>
+                        <Progress value={prediction.detailed_predictions} className="h-4 mb-3" />
+                        <p className="text-blue-700 font-medium">Analyse approfondie des capacités</p>
                       </CardContent>
                     </Card>
 
@@ -542,40 +584,13 @@ export default function SimulationPage() {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-xl text-green-900">
                           <TrendingUp className="w-6 h-6 text-green-600" />
-                          Succès en Playoffs
+                          Points Forts
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-4xl font-bold text-green-600 mb-3">
-                          {prediction.playoffSuccess.toFixed(1)}%
-                        </div>
-                        <Progress value={prediction.playoffSuccess} className="h-4 mb-3" />
-                        <p className="text-green-700 font-medium">Impact sur le succès de l'équipe</p>
-                      </CardContent>
-                    </Card>
-
-                    <Card
-                      className="card-hover"
-                      style={{
-                        background: "linear-gradient(to bottom right, white, #faf5ff)",
-                        border: "2px solid #d8b4fe",
-                      }}
-                    >
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-3 text-xl text-purple-900">
-                          <BarChart3 className="w-6 h-6 text-purple-600" />📊 Points Prédits
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-4xl font-bold text-purple-600 mb-3">
-                          {prediction.nextSeasonPoints.toFixed(1)}
-                        </div>
-                        <p className="text-purple-700 font-medium mb-3">Points par match saison prochaine</p>
-                        <div className="flex items-center gap-2">
-                          <Badge className="text-white text-lg px-3 py-1" style={{ background: "#8b5cf6" }}>
-                            Confiance: {prediction.confidence.toFixed(0)}%
-                          </Badge>
-                        </div>
+                        <div className="text-4xl font-bold text-green-600 mb-3">{prediction.strengths}</div>
+                        <Progress value={prediction.strengths} className="h-4 mb-3" />
+                        <p className="text-green-700 font-medium">Identification des atouts majeurs</p>
                       </CardContent>
                     </Card>
                   </div>
@@ -600,29 +615,44 @@ export default function SimulationPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                      {prediction.factors.map((factor: any, index: number) => (
-                        <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                          <div className="flex justify-between items-center">
-                            <span className="font-bold text-lg text-orange-900">{factor.name}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl font-bold text-orange-600">{factor.impact}%</span>
-                              <Badge
-                                className="text-white"
-                                style={{ background: factor.positive ? "#10b981" : "#ef4444" }}
-                              >
-                                {factor.positive ? "Positif" : "Négatif"}
-                              </Badge>
+                      {(() => {
+                        const factors = [
+                          {
+                            name: "Score global",
+                            impact: prediction.overall_score,
+                            positive: prediction.overall_score > 50,
+                          },
+                          {
+                            name: "Prédictions détaillées",
+                            impact: prediction.detailed_predictions,
+                            positive: prediction.detailed_predictions > 50,
+                          },
+                          { name: "Points forts", impact: prediction.strengths, positive: prediction.strengths > 50 },
+                        ]
+                        return factors.map((factor: any, index: number) => (
+                          <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-lg text-orange-900">{factor.name}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl font-bold text-orange-600">{factor.impact}</span>
+                                <Badge
+                                  className="text-white"
+                                  style={{ background: factor.positive ? "#10b981" : "#ef4444" }}
+                                >
+                                  {factor.positive ? "Positif" : "Négatif"}
+                                </Badge>
+                              </div>
                             </div>
+                            <Progress
+                              value={factor.impact}
+                              className="h-4"
+                              style={{
+                                background: factor.positive ? "#dcfce7" : "#fee2e2",
+                              }}
+                            />
                           </div>
-                          <Progress
-                            value={factor.impact}
-                            className="h-4"
-                            style={{
-                              background: factor.positive ? "#dcfce7" : "#fee2e2",
-                            }}
-                          />
-                        </div>
-                      ))}
+                        ))
+                      })()}
                     </CardContent>
                   </Card>
 
