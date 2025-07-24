@@ -23,7 +23,7 @@ export default function JoueursPage() {
         const formatted = data.data.map((p: any, index: number) => ({
           id: index,
           name: p.player || "Nom inconnu",
-          age: p.age_x || "N/A",
+          age: p.age|| "N/A",
           position: p.pos || "N/A",
           height: p.hgt || "N/A",
           weight: p.wgt || "N/A",
@@ -302,20 +302,13 @@ export default function JoueursPage() {
                   </div>
                   <CardTitle className="text-xl text-orange-900">{player.name}</CardTitle>
                   <div className="flex items-center justify-center gap-2 mt-2">
-                    <Badge style={{ background: "#f97316", color: "white", border: "1px solid #fed7aa" }}>
-                      {player.position}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      style={{
-                        borderColor: mvpLevel.color,
-                        color: mvpLevel.color,
-                        background: `${mvpLevel.color}15`,
-                      }}
-                    >
-                      {mvpLevel.icon} {mvpLevel.level}
-                    </Badge>
+                    {player.age !== "N/A" && (
+                      <Badge style={{ background: "#3b82f6", color: "white", border: "1px solid #bfdbfe" }}>
+                        {player.age} ans
+                      </Badge>
+                    )}
                   </div>
+
                 </CardHeader>
 
                 <CardContent className="relative z-10">

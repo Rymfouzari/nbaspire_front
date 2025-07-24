@@ -26,7 +26,7 @@ cors_config = CORSConfig(
 app.api.cors = cors_config
 
 ATHENA_DATABASE = 'nba_aspire_db'
-ATHENA_TABLE = 'data'
+ATHENA_TABLE = 'final_nba_dataset_cleaned'
 ATHENA_OUTPUT = 's3://nbaaspire-bucket/athena-results/'
 ATHENA_REGION = 'eu-west-1'
 
@@ -220,6 +220,7 @@ def get_players():
     query = f"""
         SELECT 
             player,
+            age,
             orb_percent,
             drb_percent,
             trb_percent,
@@ -228,7 +229,7 @@ def get_players():
             blk_percent,
             tov_percent,
             ts_percent
-        FROM player_stats_merged
+        FROM player_stats_merged_with_age
     """
     
     try:
@@ -251,8 +252,7 @@ def get_players_for_comparison():
         SELECT 
             player_id, player, pos, age, tm, pts_per_game,
             height_wo_shoes_ft_in, weight, wingspan_ft_in,
-            mp_per_game, fg_percent, x3p_percent, ft_percent,
-            trb_per_game, ast_per_game
+            mp_per_game, fg_percent, trb_per_game, ast_per_game
         FROM {ATHENA_TABLE}
     """
     
