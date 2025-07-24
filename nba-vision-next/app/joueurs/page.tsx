@@ -6,34 +6,58 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Search, Filter, TrendingUp, Award, BarChart3, ChevronUp, X } from "lucide-react"
+import { Search, Filter, Award, BarChart3, ChevronUp, X, Trophy, Target, Zap, Activity } from "lucide-react"
 import Link from "next/link"
 
 export default function JoueursPage() {
   const [players, setPlayers] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedTeam, setSelectedTeam] = useState("all")
   const [selectedPosition, setSelectedPosition] = useState("all")
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const res = await fetch("https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev/players")
+        const res = await fetch("https://hl0wiyllzi.execute-api.eu-west-1.amazonaws.com/dev/players")
         const data = await res.json()
         const formatted = data.data.map((p: any, index: number) => ({
-          id: p.player_id || index,
+          id: index,
           name: p.player || "Nom inconnu",
-          age: p.age || "N/A",
-          team: p.tm || "N/A",
-          position: p.position || p.pos || "N/A",
-          points: p.pts_per_game ? Number.parseFloat(p.pts_per_game).toFixed(1) : "0.0",
-          image: "/placeholder.svg?height=100&width=100",
+          age: p.age_x || "N/A",
+          position: p.pos || "N/A",
+          height: p.hgt || "N/A",
+          weight: p.wgt || "N/A",
+          bmi: p.bmi || "N/A",
+          wingspan: p.wngspn || "N/A",
+          standingReach: p.stndrch || "N/A",
+          sprint: p.sprint || "N/A",
+          bench: p.bench || "N/A",
+          per: p.per || "N/A",
+          vorp: p.vorp || "N/A",
+          bpm: p.bpm || "N/A",
+          ws: p.ws || "N/A",
+          pts_per_100: p.pts_per_100_poss || "N/A",
+          ortg: p.o_rtg || "N/A",
+          drtg: p.d_rtg || "N/A",
+          mvp_pts: Number.parseFloat(p.total_pts_nba_mvp) || 0,
+          mvp_share: Number.parseFloat(p.total_share_nba_mvp) || 0,
+          mvp_votes: Number.parseInt(p.first_place_votes_nba_mvp) || 0,
+          // Nouveaux champs de pourcentages - conversion en nombres
+          orb_percent: Number.parseFloat(p.orb_percent) || 0,
+          drb_percent: Number.parseFloat(p.drb_percent) || 0,
+          trb_percent: Number.parseFloat(p.trb_percent) || 0,
+          ast_percent: Number.parseFloat(p.ast_percent) || 0,
+          stl_percent: Number.parseFloat(p.stl_percent) || 0,
+          blk_percent: Number.parseFloat(p.blk_percent) || 0,
+          tov_percent: Number.parseFloat(p.tov_percent) || 0,
+          ts_percent: Number.parseFloat(p.ts_percent) || 0,
           fullData: p,
         }))
-        const uniquePlayers = Array.from(
-          new Map(formatted.map((p) => [`${p.name}-${p.team}-${p.fullData.season}`, p])).values(),
-        )
+
+        // Filtrer les joueurs avec des noms valides et supprimer les doublons
+        const validPlayers = formatted.filter((p) => p.name && p.name !== "Nom inconnu")
+        const uniquePlayers = Array.from(new Map(validPlayers.map((p) => [p.name, p])).values())
+
         setPlayers(uniquePlayers)
       } catch (error) {
         console.error("Erreur fetch:", error)
@@ -44,13 +68,29 @@ export default function JoueursPage() {
 
   const filteredPlayers = players.filter((player) => {
     const matchesSearch = player.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTeam = selectedTeam === "all" || player.team === selectedTeam
     const matchesPosition = selectedPosition === "all" || player.position === selectedPosition
-    return matchesSearch && matchesTeam && matchesPosition
+    return matchesSearch && matchesPosition
   })
 
   const toggleExpanded = (playerId: string) => {
     setExpandedPlayer(expandedPlayer === playerId ? null : playerId)
+  }
+
+  // Fonction pour déterminer la couleur selon la performance
+  const getPerformanceColor = (value: any, thresholds: { excellent: number; good: number }) => {
+    const num = Number.parseFloat(value)
+    if (isNaN(num)) return "#6b7280"
+    if (num >= thresholds.excellent) return "#10b981"
+    if (num >= thresholds.good) return "#f59e0b"
+    return "#ef4444"
+  }
+
+  // Fonction pour obtenir le niveau MVP
+  const getMVPLevel = (mvpPts: number) => {
+    if (mvpPts >= 100) return { level: "MVP Candidat", color: "#fbbf24", icon: "👑" }
+    if (mvpPts >= 50) return { level: "All-Star", color: "#f97316", icon: "⭐" }
+    if (mvpPts >= 10) return { level: "Solide", color: "#3b82f6", icon: "💪" }
+    return { level: "Émergent", color: "#6b7280", icon: "🌱" }
   }
 
   return (
@@ -159,13 +199,16 @@ export default function JoueursPage() {
       <div className="relative z-10 p-6" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {/* Header */}
         <div className="text-center mb-4">
-          <h1 className="text-5xl font-bold mb-4 text-orange-900 drop-shadow-lg">🏀 Hall of Fame NBA</h1>
+          <h1 className="text-5xl font-bold mb-4 text-orange-900 drop-shadow-lg">🏀 Analytics NBA Pro</h1>
           <div
             className="w-24 h-1 mx-auto mb-4 rounded-full"
             style={{ background: "linear-gradient(to right, #f97316, #f59e0b)" }}
           ></div>
-          <p className="text-orange-800 text-xl font-medium">Découvrez les légendes et futures stars de la NBA ! 🏆</p>
+          <p className="text-orange-800 text-xl font-medium">
+            Statistiques avancées et métriques de performance des joueurs NBA ! 📊
+          </p>
         </div>
+
         {/* Filters */}
         <div
           className="p-6 border rounded-2xl"
@@ -196,19 +239,6 @@ export default function JoueursPage() {
                 />
               </div>
             </div>
-            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger style={{ width: "12rem" }}>
-                <SelectValue placeholder="Équipe" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les équipes</SelectItem>
-                {[...new Set(players.map((p) => p.team))].map((tm, i) => (
-                  <SelectItem key={i} value={tm}>
-                    {tm}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={selectedPosition} onValueChange={setSelectedPosition}>
               <SelectTrigger style={{ width: "12rem" }}>
                 <SelectValue placeholder="Position" />
@@ -226,10 +256,11 @@ export default function JoueursPage() {
         </div>
 
         {/* Players Grid */}
-        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))" }}>
           {filteredPlayers.map((player, index) => {
-            const playerId = `${player.name}-${player.team}-${player.fullData.season}-${index}`
+            const playerId = `${player.name}-${index}`
             const isExpanded = expandedPlayer === playerId
+            const mvpLevel = getMVPLevel(player.mvp_pts)
 
             return (
               <Card
@@ -272,145 +303,291 @@ export default function JoueursPage() {
                   <CardTitle className="text-xl text-orange-900">{player.name}</CardTitle>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <Badge style={{ background: "#f97316", color: "white", border: "1px solid #fed7aa" }}>
-                      {player.team}
-                    </Badge>
-                    <Badge variant="outline" style={{ borderColor: "#fb923c", color: "#c2410c" }}>
                       {player.position}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      style={{
+                        borderColor: mvpLevel.color,
+                        color: mvpLevel.color,
+                        background: `${mvpLevel.color}15`,
+                      }}
+                    >
+                      {mvpLevel.icon} {mvpLevel.level}
                     </Badge>
                   </div>
                 </CardHeader>
 
                 <CardContent className="relative z-10">
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    <div className="flex justify-between items-center">
-                      <span className="text-orange-700 font-medium" style={{ fontSize: "0.875rem" }}>
-                        🎂 Âge
-                      </span>
-                      <span className="font-bold text-orange-600 text-lg">{player.age}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-blue-700 font-medium" style={{ fontSize: "0.875rem" }}>
-                        🏟️ Équipe
-                      </span>
-                      <span className="font-bold text-blue-600 text-lg">{player.team}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-green-700 font-medium" style={{ fontSize: "0.875rem" }}>
-                        🎯 Position
-                      </span>
-                      <span className="font-bold text-green-600 text-lg">{player.position}</span>
-                    </div>
-                    <div
-                      className="flex justify-between items-center border-orange-200"
-                      style={{ paddingTop: "0.5rem", borderTop: "1px solid #fed7aa" }}
-                    >
-                      <span className="font-bold text-purple-700" style={{ fontSize: "0.875rem" }}>
-                        🏀 PTS/Match
-                      </span>
-                      <span className="font-bold text-purple-600 text-xl">{player.points}</span>
-                    </div>
-                  </div>
-
-                  {/* Section détaillée qui s'expand */}
-                  {isExpanded && (
-                    <div
-                      className="mt-6 p-4 rounded-lg border-2 fade-in-css"
-                      style={{
-                        background: "rgba(255, 255, 255, 0.9)",
-                        borderColor: "#fed7aa",
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-bold text-orange-900 flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5" />📊 Stats Détaillées
-                        </h4>
-                        <Button
-                          onClick={() => setExpandedPlayer(null)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-orange-600 hover:text-orange-800"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
+                    {/* Pourcentages principaux */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-orange-700 font-medium text-sm">🏀 Rebonds totaux</span>
+                        <span className="font-bold text-orange-600">{(player.trb_percent || 0).toFixed(1)}%</span>
                       </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-orange-700">📏 Taille</span>
-                          <span className="font-bold text-orange-600">
-                            {player.fullData.height_wo_shoes_ft_in ?? "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-blue-700">⚖️ Poids</span>
-                          <span className="font-bold text-blue-600">
-                            {player.fullData.weight_kg ? player.fullData.weight_kg + " kg" : "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-green-700">🦅 Envergure</span>
-                          <span className="font-bold text-green-600">{player.fullData.wingspan_ft_in ?? "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-purple-700">⏱️ Minutes/match</span>
-                          <span className="font-bold text-purple-600">{player.fullData.mp_per_game ?? "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-indigo-700">🎯 % Réussite tirs</span>
-                          <span className="font-bold text-indigo-600">
-                            {player.fullData.fg_percent != null && !isNaN(Number(player.fullData.fg_percent))? Number(player.fullData.fg_percent).toFixed(1) + "%": "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-pink-700">🤲 Rebonds/match</span>
-                          <span className="font-bold text-pink-600">{player.fullData.trb_per_game ?? "N/A"}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-cyan-700">🎯 Passes/match</span>
-                          <span className="font-bold text-cyan-600">{player.fullData.ast_per_game ?? "N/A"}</span>
-                        </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700 font-medium text-sm">🎯 Passes décisives</span>
+                        <span className="font-bold text-blue-600">{(player.ast_percent || 0).toFixed(1)}%</span>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-green-700 font-medium text-sm">🎪 Tir réel (TS%)</span>
+                        <span className="font-bold text-green-600">{((player.ts_percent || 0) * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-purple-700 font-medium text-sm">⚠️ Balles perdues</span>
+                        <span className="font-bold text-purple-600">{(player.tov_percent || 0).toFixed(1)}%</span>
+                      </div>
+                    </div>
 
+                    {/* Métriques avancées principales */}
+                    {/* Métriques avancées principales - seulement si valides */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t" style={{ borderColor: "#fed7aa" }}>
+                      {player.per !== "N/A" && !isNaN(Number.parseFloat(player.per)) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-indigo-700 font-medium text-sm">⚡ PER</span>
+                          <span
+                            className="font-bold text-lg"
+                            style={{ color: getPerformanceColor(player.per, { excellent: 20, good: 15 }) }}
+                          >
+                            {Number.parseFloat(player.per).toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                      {player.vorp !== "N/A" && !isNaN(Number.parseFloat(player.vorp)) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-pink-700 font-medium text-sm">🎯 VORP</span>
+                          <span
+                            className="font-bold text-lg"
+                            style={{ color: getPerformanceColor(player.vorp, { excellent: 3, good: 1 }) }}
+                          >
+                            {Number.parseFloat(player.vorp).toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                      {player.bpm !== "N/A" && !isNaN(Number.parseFloat(player.bpm)) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-cyan-700 font-medium text-sm">📊 BPM</span>
+                          <span
+                            className="font-bold text-lg"
+                            style={{ color: getPerformanceColor(player.bpm, { excellent: 5, good: 2 }) }}
+                          >
+                            {Number.parseFloat(player.bpm).toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                      {player.ws !== "N/A" && !isNaN(Number.parseFloat(player.ws)) && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-amber-700 font-medium text-sm">🏆 WS</span>
+                          <span
+                            className="font-bold text-lg"
+                            style={{ color: getPerformanceColor(player.ws, { excellent: 10, good: 5 }) }}
+                          >
+                            {Number.parseFloat(player.ws).toFixed(1)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section détaillée qui s'expand */}
+                    {isExpanded && (
                       <div
-                        className="mt-4 p-3 rounded text-center"
+                        className="mt-6 p-4 rounded-lg border-2 fade-in-css"
                         style={{
-                          background: "linear-gradient(to right, #fff7ed, #fef3c7)",
-                          border: "1px solid #fed7aa",
+                          background: "rgba(255, 255, 255, 0.9)",
+                          borderColor: "#fed7aa",
                         }}
                       >
-                        <Award className="w-5 h-4 mx-auto text-orange-600 mb-1" />
-                        <p className="text-orange-800 text-sm font-medium">
-                          🌟 Saison {player.fullData.season || "actuelle"} - Données NBA officielles 🏆
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-bold text-orange-900 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5" />📊 Analytics Avancées
+                          </h4>
+                          <Button
+                            onClick={() => setExpandedPlayer(null)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-orange-600 hover:text-orange-800"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
 
-                  {/* Bouton pour expand/collapse */}
-                  <Button
-                    onClick={() => toggleExpanded(playerId)}
-                    className="w-full shadow-lg transition-all duration-300"
-                    style={{
-                      marginTop: "1rem",
-                      background: isExpanded
-                        ? "linear-gradient(to right, #dc2626, #b91c1c)"
-                        : "linear-gradient(to right, #ea580c, #c2410c)",
-                      color: "white",
-                      border: "1px solid #fb923c",
-                    }}
-                  >
-                    {isExpanded ? (
-                      <>
-                        <ChevronUp className="w-4 h-4 mr-2" />
-                        Masquer détails
-                      </>
-                    ) : (
-                      <>
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        Afficher détails
-                      </>
+                        {/* Pourcentages détaillés */}
+                        <div className="mb-6">
+                          <h5 className="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
+                            <Target className="w-4 h-4" />📊 Pourcentages de Performance
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-orange-700">🔥 Rebonds offensifs</span>
+                              <span className="font-bold text-orange-600">{(player.orb_percent || 0).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-blue-700">🛡️ Rebonds défensifs</span>
+                              <span className="font-bold text-blue-600">{(player.drb_percent || 0).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-green-700">🤏 Interceptions</span>
+                              <span className="font-bold text-green-600">{(player.stl_percent || 0).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-purple-700">🚫 Contres</span>
+                              <span className="font-bold text-purple-600">{(player.blk_percent || 0).toFixed(1)}%</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Métriques physiques */}
+                        {/* Métriques physiques - seulement si valides */}
+                        <div className="mb-6">
+                          <h5 className="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
+                            <Activity className="w-4 h-4" />💪 Physique & Athlétisme
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3">
+                            {player.age !== "N/A" && !isNaN(Number.parseFloat(player.age)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-blue-700">🎂 Âge</span>
+                                <span className="font-bold text-blue-600">{player.age} ans</span>
+                              </div>
+                            )}
+                            {player.height !== "N/A" && !isNaN(Number.parseFloat(player.height)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-green-700">📏 Taille</span>
+                                <span className="font-bold text-green-600">
+                                  {Number.parseFloat(player.height).toFixed(1)}&quot;
+                                </span>
+                              </div>
+                            )}
+                            {player.weight !== "N/A" && !isNaN(Number.parseFloat(player.weight)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-purple-700">⚖️ Poids</span>
+                                <span className="font-bold text-purple-600">
+                                  {Number.parseFloat(player.weight).toFixed(0)} lbs
+                                </span>
+                              </div>
+                            )}
+                            {player.wingspan !== "N/A" && !isNaN(Number.parseFloat(player.wingspan)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-indigo-700">🦅 Envergure</span>
+                                <span className="font-bold text-indigo-600">
+                                  {Number.parseFloat(player.wingspan).toFixed(1)}&quot;
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Métriques offensives/défensives */}
+                        {/* Métriques offensives/défensives - seulement si valides */}
+                        <div className="mb-6">
+                          <h5 className="text-md font-bold text-green-900 mb-3 flex items-center gap-2">
+                            <Target className="w-4 h-4" />🎯 Performance Offensive/Défensive
+                          </h5>
+                          <div className="grid grid-cols-2 gap-3">
+                            {player.pts_per_100 !== "N/A" && !isNaN(Number.parseFloat(player.pts_per_100)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-green-700">⚡ Pts/100</span>
+                                <span className="font-bold text-green-600">
+                                  {Number.parseFloat(player.pts_per_100).toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                            {player.ortg !== "N/A" && !isNaN(Number.parseFloat(player.ortg)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-blue-700">🎯 ORTG</span>
+                                <span
+                                  className="font-bold"
+                                  style={{ color: getPerformanceColor(player.ortg, { excellent: 115, good: 110 }) }}
+                                >
+                                  {Number.parseFloat(player.ortg).toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                            {player.drtg !== "N/A" && !isNaN(Number.parseFloat(player.drtg)) && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-red-700">🛡️ DRTG</span>
+                                <span
+                                  className="font-bold"
+                                  style={{
+                                    color: getPerformanceColor(110 - Number.parseFloat(player.drtg || "110"), {
+                                      excellent: 5,
+                                      good: 0,
+                                    }),
+                                  }}
+                                >
+                                  {Number.parseFloat(player.drtg).toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* MVP Stats */}
+                        {(player.mvp_pts > 0 || player.mvp_share > 0) && (
+                          <div className="mb-4">
+                            <h5 className="text-md font-bold text-yellow-900 mb-3 flex items-center gap-2">
+                              <Trophy className="w-4 h-4" />👑 Reconnaissance MVP
+                            </h5>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-yellow-700">🏆 Points MVP</span>
+                                <span className="font-bold text-yellow-600">{player.mvp_pts}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-amber-700">📊 Share MVP</span>
+                                <span className="font-bold text-amber-600">{(player.mvp_share * 100).toFixed(1)}%</span>
+                              </div>
+                              {player.mvp_votes > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-orange-700">🗳️ Votes 1er</span>
+                                  <span className="font-bold text-orange-600">{player.mvp_votes}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div
+                          className="mt-4 p-3 rounded text-center"
+                          style={{
+                            background: "linear-gradient(to right, #fff7ed, #fef3c7)",
+                            border: "1px solid #fed7aa",
+                          }}
+                        >
+                          <Award className="w-4 h-4 mx-auto text-orange-600 mb-1" />
+                          <p className="text-orange-800 text-sm font-medium">
+                            🌟 Analytics NBA Pro - Données officielles et métriques avancées 📈
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </Button>
+
+                    {/* Bouton pour expand/collapse */}
+                    <Button
+                      onClick={() => toggleExpanded(playerId)}
+                      className="w-full shadow-lg transition-all duration-300"
+                      style={{
+                        marginTop: "1rem",
+                        background: isExpanded
+                          ? "linear-gradient(to right, #dc2626, #b91c1c)"
+                          : "linear-gradient(to right, #ea580c, #c2410c)",
+                        color: "white",
+                        border: "1px solid #fb923c",
+                      }}
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-4 h-4 mr-2" />
+                          Masquer Analytics
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 mr-2" />
+                          Voir Analytics Pro
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )

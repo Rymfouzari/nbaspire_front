@@ -52,7 +52,7 @@ export default function ComparaisonPage() {
   const [comparisonData, setComparisonData] = useState<ComparisonResult | null>(null)
 
   // URL API Chalice
-  const API_BASE_URL = "https://o13guuit0k.execute-api.eu-west-1.amazonaws.com/dev"
+  const API_BASE_URL = "https://hl0wiyllzi.execute-api.eu-west-1.amazonaws.com/dev"
   const uniquePlayers = Array.from(new Map(players.map((p) => [p.player_id, p])).values())
 
   // Charger la liste des joueurs
@@ -60,7 +60,7 @@ export default function ComparaisonPage() {
     try {
       setLoadingPlayers(true)
       setError(null)
-      const response = await fetch(`${API_BASE_URL}/players`)
+      const response = await fetch(`${API_BASE_URL}/players/comparison`)
       if (!response.ok) {
         throw new Error(`Erreur HTTP: ${response.status}`)
       }

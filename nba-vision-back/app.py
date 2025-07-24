@@ -216,15 +216,19 @@ def predict_player():
 
 @app.route('/players', methods=['GET'], cors=cors_config)
 def get_players():
-    print("👥 Players route called")
+    print("Players route called")
     query = f"""
         SELECT 
-            player_id, player, pos, age, tm, pts_per_game,
-            height_wo_shoes_ft_in, weight, wingspan_ft_in,
-            mp_per_game, fg_percent, trb_per_game, ast_per_game
-        FROM {ATHENA_TABLE}
-        WHERE season_year >= 2023
-        LIMIT 50
+            player,
+            orb_percent,
+            drb_percent,
+            trb_percent,
+            ast_percent,
+            stl_percent,
+            blk_percent,
+            tov_percent,
+            ts_percent
+        FROM player_stats_merged
     """
     
     try:
@@ -239,6 +243,32 @@ def get_players():
     except Exception as e:
         print(f"❌ Error in players route: {e}")
         return Response(body={"error": str(e)}, status_code=500)
+    
+@app.route('/players/comparison', methods=['GET'], cors=cors_config)
+def get_players_for_comparison():
+    print("Players comparison route called")
+    query = f"""
+        SELECT 
+            player_id, player, pos, age, tm, pts_per_game,
+            height_wo_shoes_ft_in, weight, wingspan_ft_in,
+            mp_per_game, fg_percent, x3p_percent, ft_percent,
+            trb_per_game, ast_per_game
+        FROM {ATHENA_TABLE}
+    """
+    
+    try:
+        results = run_athena_query(query)
+        headers = [col['VarCharValue'] for col in results['ResultSet']['Rows'][0]['Data']]
+        players = [
+            dict(zip(headers, [d.get('VarCharValue', '') for d in row['Data']]))
+            for row in results['ResultSet']['Rows'][1:]
+        ]
+        print(f"✅ Found {len(players)} players for comparison")
+        return {"data": players}
+    except Exception as e:
+        print(f"❌ Error in /players/comparison: {e}")
+        return Response(body={"error": str(e)}, status_code=500)
+
 
 @app.route('/compare/{player1_id}/{player2_id}', cors=True)
 def compare_players(player1_id, player2_id):
